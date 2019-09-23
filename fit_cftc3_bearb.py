@@ -46,7 +46,7 @@ decay = 0.9975 # gewichtung beobachtung über Zeit
 fut = pd.read_excel('Daten_v1\\Prices.xlsx', index_col=0)
 
 tickers = list(fut)
-ind = 2
+ind = 12
 
 
 ret = pd.DataFrame({tickers[ind] : np.log(fut[tickers[ind]]/fut[tickers[ind]].shift(1))})
@@ -224,7 +224,7 @@ coefA = pd.DataFrame(index=model_idx, columns=col)
 for idx, row in models.iterrows():
     coefA.loc[idx, :] = row[(alpha, 'diff_', 'dod')].coef_[0, col]
 
-tickers[ind]
+#tickers[ind]
 
 plt.figure('Coefficients')
 plt.plot(coefA)
@@ -263,8 +263,8 @@ axs[1].set_title(str(mat2) + ' days')
 
 # ----------------------------------------------------------------------------------------------------------------------
 plt.figure('hallo ')
-# plt.plot(models.loc[model_idx[-1], (alpha, 'level')].coef_[0, :])
-# plt.plot(models.loc[model_idx[-1], (alpha, 'diff_')].coef_[0, :])
+#plt.plot(models.loc[model_idx[-1], (alpha, 'level')].coef_[0, :])
+#plt.plot(models.loc[model_idx[-1], (alpha, 'diff_')].coef_[0, :])
 print(models.loc[model_idx[-1], (alpha, 'level', 'dod')])
 print(models.loc[model_idx[-1], (alpha, 'level', 'dod')].coef_)
 print(models.loc[model_idx[-1], (alpha, 'diff_', 'dod')].coef_)
