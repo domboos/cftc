@@ -40,13 +40,13 @@ os.chdir('C:\\Users\\grbi\\Documents\\Paper')
 
 maxlag = 250
 # decay = .9975 is pretty good and pretty reasonable
-decay = 1 # gewichtung beobachtung über Zeit
+decay = 0.9975 # gewichtung beobachtung über Zeit
 
 # import and create returns
 fut = pd.read_excel('Daten_v1\\Prices.xlsx', index_col=0)
 
 tickers = list(fut)
-ind = 1
+ind = 2
 
 
 ret = pd.DataFrame({tickers[ind] : np.log(fut[tickers[ind]]/fut[tickers[ind]].shift(1))})
@@ -222,20 +222,20 @@ col = [5, 10, 20, 35, 100, 200, 250]
 alpha = A[0]
 coefA = pd.DataFrame(index=model_idx, columns=col)
 for idx, row in models.iterrows():
-    coefA.loc[idx, :] = row[(alpha, 'level', 'dod')].coef_[0, col]
+    coefA.loc[idx, :] = row[(alpha, 'diff_', 'dod')].coef_[0, col]
 
-
+tickers[ind]
 
 plt.figure('Coefficients')
 plt.plot(coefA)
-plt.title('some loadings for the dod diff model')
+plt.title('some loadings for the dod diff model, market:' + str(tickers[ind]))
 plt.legend(coefA.columns, loc='best')
 
 
 
 plt.figure('score')
 plt.plot(scores)
-plt.title('R-squared')
+plt.title('R-squared, market:' + str(tickers[ind]))
 plt.legend(scores.columns, loc='best')
 
 # ----------------------------------------------------------------------------------------------------------------------
