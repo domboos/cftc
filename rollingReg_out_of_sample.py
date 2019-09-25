@@ -5,25 +5,12 @@ Created on Wed Sep 25 10:25:44 2019
 @author: grbi
 """
 
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Sep 24 15:29:57 2019
-
-@author: grbi
-"""
-
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Sep 24 10:14:06 2019
-
-@author: grbi
-"""
 
 
 
-
-import pandas as pd
+import seaborn as sns; sns.set(color_codes=True)
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 import statsmodels.api as sm
 import statsmodels.formula.api as smf
@@ -170,7 +157,7 @@ window = 52 *5
 alpha = [2.5]
 
 
-model_idx = c_ret.index[:]
+model_idx = cc_ret.index[:]
 model_clm = pd.MultiIndex.from_product([alpha, ['level', 'diff_'], ['ov', 'dod']])
 models = pd.DataFrame(index=model_idx, columns=model_clm)
 scores = pd.DataFrame(index=model_idx, columns=model_clm)
@@ -182,19 +169,18 @@ scores = scores.reset_index()
 prediction = pd.DataFrame(index=model_idx, columns=model_clm)
 prediction = prediction.reset_index()
 
-#lag_idx = c_ret.index[P - 1]
 
-
-i= window
-#Todo: 
-for i in range(window,len(c_ret.index[:])):
-    print()
+cc_ret.index[0]
+for i in range(window,len(cc_ret.index[:])-1):
+    
+    
 #    y = np.concatenate((cc_ret['cftc'].iloc[i-window:i,:].values, np.zeros((maxlag + 1, 1))))
 #    X_dod = np.concatenate((cc_ret['ret'].iloc[i-window:i,:], gamma * alpha), axis=0)
     
     # variable for diffs
     y_diff = np.concatenate((cc_ret_diff['cftc'].iloc[i-window:i,:].values, np.zeros((maxlag + 1, 1))))
     X_dod_diff = np.concatenate((cc_ret_diff['ret'].iloc[i-window:i,:],gamma * alpha), axis=0)
+    
 
     # instruments for ov
 #    X_ov = np.concatenate((cc_ret[['ret', 'ov']].iloc[i-window:i,:], gamma_ov * alpha),axis=0)
@@ -203,31 +189,37 @@ for i in range(window,len(c_ret.index[:])):
     
     #fit the models
 #    models.loc[i, (alpha, 'level', 'dod')] = sm.OLS(y,sm.add_constant(X_dod)).fit()
-    models.loc[i, (alpha, 'diff_', 'dod')] = sm.OLS(y_diff,X_dod_diff).fit()
+    models.loc[i-1, (alpha, 'diff_', 'dod')] = sm.OLS(y_diff,X_dod_diff).fit()
 #    models.loc[i, (alpha, 'level', 'ov')] = sm.OLS(y,X_ov).fit()
 #    models.loc[i, (alpha, 'diff_', 'ov')] = sm.OLS(y_diff,X_ov_diff).fit()
     
 #    scores.loc[i, (alpha, 'level', 'dod')] = models.loc[i, (alpha, 'level', 'dod')].get_values()[0].rsquared
-    scores.loc[i, (alpha, 'diff_', 'dod')] = models.loc[i, (alpha, 'diff_', 'dod')].get_values()[0].rsquared
+    scores.loc[i-1, (alpha, 'diff_', 'dod')] = models.loc[i-1, (alpha, 'diff_', 'dod')].get_values()[0].rsquared
 #    scores.loc[i, (alpha, 'level', 'ov')] = models.loc[i, (alpha, 'level', 'ov')].get_values()[0].rsquared        
 #    scores.loc[i, (alpha, 'diff_', 'ov')] = models.loc[i, (alpha, 'diff_', 'ov')].get_values()[0].rsquared
     
-    prediction.loc[i+1, (alpha, 'diff_', 'dod')] = \
-    sum(models.loc[i, (alpha, 'diff_', 'dod')].get_values()[0].params * cc_ret_diff['ret'].iloc[i+1,:])
+    prediction.loc[i, (alpha, 'diff_', 'dod')] = \
+    sum(models.loc[i-1, (alpha, 'diff_', 'dod')].get_values()[0].params * cc_ret_diff['ret'].iloc[i,:])
 
     
     print(str(i)) # + ' number of obs(diff/level): ' + str(models.loc[i, (alpha, 'diff_', 'ov')].get_values()[0].nobs) +\
 #          '/' + str(models.loc[i, (alpha, 'level', 'dod')].get_values()[0].nobs))
 
 
+a_ret_est = cc_ret_diff['ret'].iloc[i-window:i,:]
+a_ret_oos = cc_ret_diff['ret'].iloc[i+1,:]
+a_ret_all = cc_ret_diff['ret'].copy()
 
 
 
-prediction = prediction.set_index(prediction['Dates'],drop = True)
+cc_ret_diff
+    
+prediction1 = prediction.set_index(prediction['Dates'],drop = True)
 
-x = pd.DataFrame({'forecast': (prediction.iloc[:,4]),
+x = pd.DataFrame({'forecast': prediction1.iloc[:,4].astype(float),
                   'emp': cc_ret_diff['cftc','net_specs']}).dropna()
-x['forecast'] = x.forecast.astype(float)
+
+
 
 plt.figure()
 plt.scatter(x['forecast'],x['emp'])
@@ -236,7 +228,7 @@ mod5 = smf.ols('emp ~ forecast',x).fit()
 print(mod5.summary())
 
 
-import seaborn as sns; sns.set(color_codes=True)
+
 
 sns.regplot(x="forecast", y="emp", data=x)
 
