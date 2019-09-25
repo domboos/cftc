@@ -5,19 +5,7 @@ Created on Wed Sep 25 10:25:44 2019
 @author: grbi
 """
 
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Sep 24 15:29:57 2019
 
-@author: grbi
-"""
-
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Sep 24 10:14:06 2019
-
-@author: grbi
-"""
 
 
 
@@ -182,11 +170,8 @@ scores = scores.reset_index()
 prediction = pd.DataFrame(index=model_idx, columns=model_clm)
 prediction = prediction.reset_index()
 
-#lag_idx = c_ret.index[P - 1]
 
-i =1113
 
-#Todo: 
 for i in range(window,len(cc_ret.index[:])):
     j = i-1
     
@@ -221,12 +206,6 @@ for i in range(window,len(cc_ret.index[:])):
     print(str(i)) # + ' number of obs(diff/level): ' + str(models.loc[i, (alpha, 'diff_', 'ov')].get_values()[0].nobs) +\
 #          '/' + str(models.loc[i, (alpha, 'level', 'dod')].get_values()[0].nobs))
 
-print(i)
-
--0.0028487
-
-
-cc_ret_diff['ret'].iloc[1112,0]
 
 
 prediction = prediction.set_index(prediction['Dates'],drop = True)
