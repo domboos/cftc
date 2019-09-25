@@ -170,7 +170,7 @@ window = 52 *5
 alpha = [2.5]
 
 
-model_idx = c_ret.index[:]
+model_idx = cc_ret.index[:]
 model_clm = pd.MultiIndex.from_product([alpha, ['level', 'diff_'], ['ov', 'dod']])
 models = pd.DataFrame(index=model_idx, columns=model_clm)
 scores = pd.DataFrame(index=model_idx, columns=model_clm)
@@ -184,17 +184,19 @@ prediction = prediction.reset_index()
 
 #lag_idx = c_ret.index[P - 1]
 
+i =1113
 
-i= window
 #Todo: 
-for i in range(window,len(c_ret.index[:])):
-    print()
+for i in range(window,len(cc_ret.index[:])):
+    j = i-1
+    
+    len(range(j-window,j))
 #    y = np.concatenate((cc_ret['cftc'].iloc[i-window:i,:].values, np.zeros((maxlag + 1, 1))))
 #    X_dod = np.concatenate((cc_ret['ret'].iloc[i-window:i,:], gamma * alpha), axis=0)
     
     # variable for diffs
-    y_diff = np.concatenate((cc_ret_diff['cftc'].iloc[i-window:i,:].values, np.zeros((maxlag + 1, 1))))
-    X_dod_diff = np.concatenate((cc_ret_diff['ret'].iloc[i-window:i,:],gamma * alpha), axis=0)
+    y_diff = np.concatenate((cc_ret_diff['cftc'].iloc[j-window:j,:].values, np.zeros((maxlag + 1, 1))))
+    X_dod_diff = np.concatenate((cc_ret_diff['ret'].iloc[j-window:j,:],gamma * alpha), axis=0)
 
     # instruments for ov
 #    X_ov = np.concatenate((cc_ret[['ret', 'ov']].iloc[i-window:i,:], gamma_ov * alpha),axis=0)
@@ -203,24 +205,28 @@ for i in range(window,len(c_ret.index[:])):
     
     #fit the models
 #    models.loc[i, (alpha, 'level', 'dod')] = sm.OLS(y,sm.add_constant(X_dod)).fit()
-    models.loc[i, (alpha, 'diff_', 'dod')] = sm.OLS(y_diff,X_dod_diff).fit()
+    models.loc[j, (alpha, 'diff_', 'dod')] = sm.OLS(y_diff,X_dod_diff).fit()
 #    models.loc[i, (alpha, 'level', 'ov')] = sm.OLS(y,X_ov).fit()
 #    models.loc[i, (alpha, 'diff_', 'ov')] = sm.OLS(y_diff,X_ov_diff).fit()
     
 #    scores.loc[i, (alpha, 'level', 'dod')] = models.loc[i, (alpha, 'level', 'dod')].get_values()[0].rsquared
-    scores.loc[i, (alpha, 'diff_', 'dod')] = models.loc[i, (alpha, 'diff_', 'dod')].get_values()[0].rsquared
+    scores.loc[j, (alpha, 'diff_', 'dod')] = models.loc[j, (alpha, 'diff_', 'dod')].get_values()[0].rsquared
 #    scores.loc[i, (alpha, 'level', 'ov')] = models.loc[i, (alpha, 'level', 'ov')].get_values()[0].rsquared        
 #    scores.loc[i, (alpha, 'diff_', 'ov')] = models.loc[i, (alpha, 'diff_', 'ov')].get_values()[0].rsquared
     
-    prediction.loc[i+1, (alpha, 'diff_', 'dod')] = \
-    sum(models.loc[i, (alpha, 'diff_', 'dod')].get_values()[0].params * cc_ret_diff['ret'].iloc[i+1,:])
+    prediction.loc[i, (alpha, 'diff_', 'dod')] = \
+    sum(models.loc[j, (alpha, 'diff_', 'dod')].get_values()[0].params * cc_ret_diff['ret'].iloc[j,:])
 
     
     print(str(i)) # + ' number of obs(diff/level): ' + str(models.loc[i, (alpha, 'diff_', 'ov')].get_values()[0].nobs) +\
 #          '/' + str(models.loc[i, (alpha, 'level', 'dod')].get_values()[0].nobs))
 
+print(i)
+
+-0.0028487
 
 
+cc_ret_diff['ret'].iloc[1112,0]
 
 
 prediction = prediction.set_index(prediction['Dates'],drop = True)
