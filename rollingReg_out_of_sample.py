@@ -1,5 +1,19 @@
 # -*- coding: utf-8 -*-
 """
+Created on Wed Sep 25 10:25:44 2019
+
+@author: grbi
+"""
+
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Sep 24 15:29:57 2019
+
+@author: grbi
+"""
+
+# -*- coding: utf-8 -*-
+"""
 Created on Tue Sep 24 10:14:06 2019
 
 @author: grbi
@@ -10,24 +24,26 @@ Created on Tue Sep 24 10:14:06 2019
 
 import pandas as pd
 import numpy as np
-import statsmodels.api as sm
 import matplotlib.pyplot as plt
+import statsmodels.api as sm
+import statsmodels.formula.api as smf
+
 import os
 
 os.getcwd()
-# todo: @dominik: grbi durch bood ersetzen!
 os.chdir('C:\\Users\\grbi\\PycharmProjects\\cftc\\data')
 
-    
+#---------------------------------------------------------------------   
 # for return signals:
 maxlag = 250
+
 
 # import and create returns
 fut = pd.read_excel('Prices.xlsx', index_col=0)
 
-# todo: set market:
 
-ind = 'HG1'
+#set market you want to research:
+ind = 'KC1'
 
 
 #calculate log-returns:
@@ -43,7 +59,7 @@ midx = pd.MultiIndex(levels=[['cftc'], ['net_specs']], codes=[[0], [0]])
 c.columns = midx
 
 
-#calculate vola
+#calculate Volatility
 vol = 100 * ret.ewm(span = 60).std()
 midx = pd.MultiIndex(levels=[['ov'], ['vol']], codes=[[0],[0]])
 vol.columns = midx
@@ -105,9 +121,9 @@ c_ret = pd.merge(c, ret.iloc[:, :-1], how='inner', left_index=True, right_index=
 c_ret_diff = pd.merge(c, ret.iloc[:, :-1], how='inner', left_index=True, right_index=True).diff().dropna()
 
 
+#x1 = ret.iloc[:,0].shift(4)
 
-
-#todo: naming, multiply vix by cftc pos for convective outtflow: ln(vix_t / vix_t-1) * cftc_t-1
+#todo: naming!!!
 #Merge other variables to cf:
 cf = c.shift(1) #
 
@@ -120,7 +136,7 @@ cf = pd.merge(cf, vix, how='inner', left_index=True, right_index=True).dropna()
 cf.head()
 
 
-#Todo: multiply vola with the posititon on the day before: Template
+#Todo: multiply vola with the posititon on the day before:
 # !!! from here on is copy paste original:
 #cf = c.shift(2)
 #midx = pd.MultiIndex(levels=[['ov'], ['cftc_lag1']], codes=[[0],[0]])
@@ -148,55 +164,102 @@ gamma_ov = np.concatenate((gamma, np.zeros((maxlag+1, add_var))), axis=1)
 
 
 #set window
-window = 52 *5 
+window = 52 *5
 
 #smoothing parameter:
 alpha = [2.5]
 
-#Todo: indexing, ain't perfect yet (rolling window easier over integer index, graphs better with date index...)
-model_idx = c_ret.index[window:]
+
+model_idx = c_ret.index[:]
 model_clm = pd.MultiIndex.from_product([alpha, ['level', 'diff_'], ['ov', 'dod']])
 models = pd.DataFrame(index=model_idx, columns=model_clm)
 scores = pd.DataFrame(index=model_idx, columns=model_clm)
 
+#reset index to iter with with index:
+# todo: is there a easier way with Dates as index?
 models = models.reset_index()
 scores = scores.reset_index()
+prediction = pd.DataFrame(index=model_idx, columns=model_clm)
+prediction = prediction.reset_index()
+
 #lag_idx = c_ret.index[P - 1]
 
 
-i= 52*5
-
+i= window
+#Todo: 
 for i in range(window,len(c_ret.index[:])):
     print()
-    y = np.concatenate((cc_ret['cftc'].iloc[i-window:i,:].values, np.zeros((maxlag + 1, 1))))
-    X_dod = np.concatenate((cc_ret['ret'].iloc[i-window:i,:], gamma * alpha), axis=0)
+#    y = np.concatenate((cc_ret['cftc'].iloc[i-window:i,:].values, np.zeros((maxlag + 1, 1))))
+#    X_dod = np.concatenate((cc_ret['ret'].iloc[i-window:i,:], gamma * alpha), axis=0)
     
     # variable for diffs
     y_diff = np.concatenate((cc_ret_diff['cftc'].iloc[i-window:i,:].values, np.zeros((maxlag + 1, 1))))
     X_dod_diff = np.concatenate((cc_ret_diff['ret'].iloc[i-window:i,:],gamma * alpha), axis=0)
 
     # instruments for ov
-    X_ov = np.concatenate((cc_ret[['ret', 'ov']].iloc[i-window:i,:], gamma_ov * alpha),axis=0)
-    X_ov_diff = np.concatenate((cc_ret_diff[['ret', 'ov']].iloc[i-window:i,:], gamma_ov * alpha), axis=0)
-
-    models.loc[i, (alpha, 'level', 'dod')] = sm.OLS(y,sm.add_constant(X_dod)).fit()
-    models.loc[i, (alpha, 'diff_', 'dod')] = sm.OLS(y_diff,X_dod_diff).fit()
-    models.loc[i, (alpha, 'level', 'ov')] = sm.OLS(y,X_ov).fit()
-    models.loc[i, (alpha, 'diff_', 'ov')] = sm.OLS(y_diff,X_ov_diff).fit()
-
-    scores.loc[i, (alpha, 'level', 'dod')] = models.loc[i, (alpha, 'level', 'dod')].get_values()[0].rsquared
-    scores.loc[i, (alpha, 'diff_', 'dod')] = models.loc[i, (alpha, 'diff_', 'dod')].get_values()[0].rsquared
-    scores.loc[i, (alpha, 'level', 'ov')] = models.loc[i, (alpha, 'level', 'ov')].get_values()[0].rsquared        
-    scores.loc[i, (alpha, 'diff_', 'ov')] = models.loc[i, (alpha, 'diff_', 'ov')].get_values()[0].rsquared
+#    X_ov = np.concatenate((cc_ret[['ret', 'ov']].iloc[i-window:i,:], gamma_ov * alpha),axis=0)
+#    X_ov_diff = np.concatenate((cc_ret_diff[['ret', 'ov']].iloc[i-window:i,:], gamma_ov * alpha), axis=0)
+ 
     
-    print(str(i) + ' number of obs(diff/level): ' + str(models.loc[i, (alpha, 'diff_', 'ov')].get_values()[0].nobs) +\
-          '/' + str(models.loc[i, (alpha, 'level', 'dod')].get_values()[0].nobs))
+    #fit the models
+#    models.loc[i, (alpha, 'level', 'dod')] = sm.OLS(y,sm.add_constant(X_dod)).fit()
+    models.loc[i, (alpha, 'diff_', 'dod')] = sm.OLS(y_diff,X_dod_diff).fit()
+#    models.loc[i, (alpha, 'level', 'ov')] = sm.OLS(y,X_ov).fit()
+#    models.loc[i, (alpha, 'diff_', 'ov')] = sm.OLS(y_diff,X_ov_diff).fit()
+    
+#    scores.loc[i, (alpha, 'level', 'dod')] = models.loc[i, (alpha, 'level', 'dod')].get_values()[0].rsquared
+    scores.loc[i, (alpha, 'diff_', 'dod')] = models.loc[i, (alpha, 'diff_', 'dod')].get_values()[0].rsquared
+#    scores.loc[i, (alpha, 'level', 'ov')] = models.loc[i, (alpha, 'level', 'ov')].get_values()[0].rsquared        
+#    scores.loc[i, (alpha, 'diff_', 'ov')] = models.loc[i, (alpha, 'diff_', 'ov')].get_values()[0].rsquared
+    
+    prediction.loc[i+1, (alpha, 'diff_', 'dod')] = \
+    sum(models.loc[i, (alpha, 'diff_', 'dod')].get_values()[0].params * cc_ret_diff['ret'].iloc[i+1,:])
+
+    
+    print(str(i)) # + ' number of obs(diff/level): ' + str(models.loc[i, (alpha, 'diff_', 'ov')].get_values()[0].nobs) +\
+#          '/' + str(models.loc[i, (alpha, 'level', 'dod')].get_values()[0].nobs))
 
 
 
-#print(models.loc[i, (alpha, 'diff_', 'dod')].get_values()[0].summary())
 
-scores.head()
+
+prediction = prediction.set_index(prediction['Dates'],drop = True)
+
+x = pd.DataFrame({'forecast': (prediction.iloc[:,4]),
+                  'emp': cc_ret_diff['cftc','net_specs']}).dropna()
+x['forecast'] = x.forecast.astype(float)
+
+plt.figure()
+plt.scatter(x['forecast'],x['emp'])
+
+mod5 = smf.ols('emp ~ forecast',x).fit()
+print(mod5.summary())
+
+
+import seaborn as sns; sns.set(color_codes=True)
+
+sns.regplot(x="forecast", y="emp", data=x)
+
+plt.plot(x['emp'])
+
+#returns lbp: 250, fittingperiod 5y
+#mod4 = smf.ols('emp ~ forecast',x).fit()
+#print(mod2.summary())
+
+#daily returns: mod1 R2: 0.016
+#weekly returns: mod2: R2: 0.03
+
+#weekly returns, shift(1): mod3: R2: 0.046
+#daily returns, shift(1): mod4:  R2: 0.027
+    
+
+
+
+
+plt.plot(x)
+
+print(models.loc[i, (alpha, 'diff_', 'dod')].get_values()[0].summary())
+
 scores = scores.set_index(scores['Dates'],drop = True)
 scores = scores.dropna()
 del scores['Dates']
@@ -214,3 +277,4 @@ plt.title('R-squared, market:' + str(ind))
 plt.legend(scores.columns, loc='best')
 
 #---------------------------------------------------------------------
+
