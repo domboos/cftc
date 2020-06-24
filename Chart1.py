@@ -5,7 +5,7 @@ idx = range(260)
 
 chartFrame = pd.DataFrame(index=idx, columns=['mom120', 'dd'])
 
-chartFrame['mom120'] = 1/120
+chartFrame.loc['mom120', :119] = 1/120
 hh = list(idx)
 temp = [(260 - h)/(130*260) for h in hh]
 chartFrame['dd'] = temp
