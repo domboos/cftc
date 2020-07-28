@@ -33,39 +33,15 @@ from cftc_functions import *
 tcker = pd.read_sql_query("select distinct bb_tkr from cftc.fut_desc where bb_tkr <> 'JO' and bb_tkr <> 'QS';", engine1)
 
 #---------------------------------------------------------------------------------------
-#------------------------ Get Scaling-Factor -------------------------------------------
+#------------------------ Grid Search (Get Scaling-Factor) -----------------------------
 #---------------------------------------------------------------------------------------
 #Runtime ~ gefühlt: 4h
 
 # alpha_scale_f = [0.00001,0.000001,0.0000001,0.00000001,0.000000001] # for exposure like net_non_commercials
 
-alpha_scale_f = [0.2,0.5,1,1.5,2.0,2.5,3.0] # for ratio
+alpha_scale_f = [1,1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0] # for ratio
 
 
-
-
-def getR2(dict_result):
-    """
-    Parameters
-    ----------
-    dict_result: dictinoary 
-        from the following Loop
-
-    Returns
-    -------
-    R2 
-    """
-    df_result= pd.DataFrame(index = list(results), columns = ['OOSR2_1','OOSR2_2'])
-    for i in list(results):
-        df_result.loc[i,'OOSR2_1'] = dict_result[i]['OOSR2'][0]
-        df_result.loc[i,'OOSR2_2'] = dict_result[i]['OOSR2'][1]
-    return df_result
-
-
-optimalscalingfactor = pd.DataFrame(index = tcker.bb_tkr, columns = ['scaling_factor'])
-
-tk = 'KC'
-asf = 2
 
 # type_of_exposure = type_;bb_tkr = tk;gammatype = 'dom';alpha = ['ratio'];alpha_scale_factor= asf;  start_dt='2000-01-01';end_dt='2019-12-31'
 results_mm = {}
@@ -75,7 +51,8 @@ for tk in tcker.bb_tkr:
     for asf in alpha_scale_f:
         try: 
             print(asf)
-            results_mm[str(str(asf)+ " "  + tk)]  = calcCFTC(type_of_exposure = type_,bb_tkr = tk,gammatype = 'dom',alpha = ['ratio'],alpha_scale_factor= asf,  start_dt='2000-01-01', end_dt='2019-12-31')  
+            results_mm[str(str(asf)+ " "  + tk)]  = calcCFTC(type_of_exposure = 'ratio_mm',bb_tkr = tk,gammatype = 'dom',alpha = ['ratio'],alpha_scale_factor= asf,  start_dt='2000-01-01', end_dt='2019-12-31')  
+            
             results_nonc[str(str(asf)+ " "  + tk)]  = calcCFTC(type_of_exposure = 'ratio_nonc',bb_tkr = tk,gammatype = 'dom',alpha = ['ratio'],alpha_scale_factor= asf,  start_dt='2000-01-01', end_dt='2019-12-31')
               
         except Exception as error:
@@ -83,15 +60,63 @@ for tk in tcker.bb_tkr:
             print ("Oops! An exception has occured:", error)
             print ("Exception TYPE:", type(error))
     
-    
-    master_mm[tk] = results_nonc
-    a = getR2(results)
-    a[a.OOSR2_2 == a.OOSR2_2.max()].index
-    print(a)
-    optimalscalingfactor.loc[tk] = a[a.OOSR2_2 == a.OOSR2_2.max()].index.values[0]
+  
+#---------------------------------------------------------------------------------------
+#------------------------ Get R2 and Scaling-Factor ------------------------------------
+#---------------------------------------------------------------------------------------
+keys_mm = list(results_mm)
+results_R2_mm = pd.DataFrame(columns = ['key','R2'])
 
-os.getcwd()    
-optimalscalingfactor.to_excel(str('scalingFactor_' + type_+'.xlsx'))
+for tk in tcker.bb_tkr:
+    temp = pd.DataFrame(columns = ['key','R2'])
+
+    for el in keys_mm:
+        if el.endswith(tk):
+            temp = temp.append(pd.DataFrame({'key':el ,'R2': results_mm[el]['OOSR2'][1]}, index = [0]), ignore_index = True)
+            
+            # print(temp[temp.R2 == temp.R2.max()])
+    results_R2_mm= results_R2_mm.append(temp[temp.R2 == temp.R2.max()], ignore_index = True)
+
+
+
+keys_nonc = list(results_nonc)
+results_R2_nonc = pd.DataFrame(columns = ['key','R2'])
+
+for tk in tcker.bb_tkr:
+
+    temp = pd.DataFrame(columns = ['key','R2'])
+
+    for el in keys_nonc:
+        if el.endswith(tk):
+            temp = temp.append(pd.DataFrame({'key':el ,'R2': results_nonc[el]['OOSR2'][1]}, index = [0]), ignore_index = True)
+            
+            # print(temp[temp.R2 == temp.R2.max()])
+    results_R2_nonc= results_R2_nonc.append(temp[temp.R2 == temp.R2.max()], ignore_index = True)
+
+
+for i in results_R2_mm.index:
+    results_R2_mm.loc[i,'scalingFactor'] = results_R2_mm.loc[i,'key'][0:3]
+    results_R2_mm.loc[i,'bb_tkr'] = results_R2_mm.loc[i,'key'][-2:].replace(" ", "")
+
+
+r2_mm = results_R2_mm.loc[:,['bb_tkr','R2']]
+scaling_factor_ratio_mm = results_R2_mm.loc[:,['bb_tkr','scalingFactor']]
+
+
+for i in results_R2_nonc.index:
+    results_R2_nonc.loc[i,'scalingFactor'] = results_R2_nonc.loc[i,'key'][0:3]
+    results_R2_nonc.loc[i,'bb_tkr'] = results_R2_nonc.loc[i,'key'][-2:].replace(" ", "")
+    
+r2_nonc_ratio = results_R2_nonc.loc[:,['bb_tkr','R2']]
+scaling_factor_ratio_nonc = results_R2_nonc.loc[:,['bb_tkr','scalingFactor']]
+
+
+r2_nonc_ratio.to_excel('r2_nonc_ratio.xlsx',index = False)
+scaling_factor_ratio_nonc.to_excel('scaling_factor_ratio_nonc.xlsx',index = False)
+r2_mm.to_excel('r2_mm_ratio.xlsx',index = False)
+scaling_factor_ratio_mm.to_excel('scaling_factor_ratio_mm.xlsx', index = False)
+    
+
 
 
 #---------------------------------------------------------------------------------------

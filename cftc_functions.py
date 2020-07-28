@@ -71,53 +71,45 @@ def getexposure(type_of_exposure,bb_tkr,start_dt ='1900-01-01',end_dt='2019-12-3
     """
     #TODO: include Multiplier
     
-    try:
-        if type_of_exposure == 'ratio_mm':
-            oi = gets(engine1,type = 'agg_open_interest', data_tab='vw_data',desc_tab='cot_desc',bb_tkr=bb_tkr,bb_ykey=bb_ykey,start_dt= start_dt, end_dt=end_dt)
-            pos1 = gets(engine1,type = 'net_managed_money', data_tab='vw_data',bb_tkr=bb_tkr,bb_ykey=bb_ykey,start_dt= start_dt, end_dt=end_dt)
-            
-            pos_temp = pd.merge(left = pos1, right = oi, how = 'left', left_index = True, right_index = True, suffixes=('_pos', '_oi'))
-            exposure = pd.DataFrame(index = pos_temp.index,data = (pos_temp.qty_pos/pos_temp.qty_oi),columns = ['qty'])
-            
-            
-        elif type_of_exposure == 'ratio_nonc':
-            oi = gets(engine1,type = 'agg_open_interest', data_tab='vw_data',desc_tab='cot_desc',bb_tkr=bb_tkr,bb_ykey=bb_ykey,start_dt= start_dt, end_dt=end_dt)
-            pos1 = gets(engine1,type = 'net_non_commercials', data_tab='vw_data',bb_tkr=bb_tkr,bb_ykey=bb_ykey,start_dt= start_dt, end_dt=end_dt)
-            
-            pos_temp = pd.merge(left = pos1, right = oi, how = 'left', left_index = True, right_index = True, suffixes=('_pos', '_oi'))
-            exposure = pd.DataFrame(index = pos_temp.index,data = (pos_temp.qty_pos/pos_temp.qty_oi),columns = ['qty'])
-    
-            
-        elif type_of_exposure == 'net_managed_money':
-            
-            pos = gets(engine1,type = type_of_exposure, data_tab='vw_data',bb_tkr=bb_tkr,bb_ykey=bb_ykey,start_dt= start_dt, end_dt=end_dt, constr=constr, adjustment = adjustment)
-            
-            price_non_adj = gets(engine1,type = 'px_last',desc_tab= 'fut_desc', data_tab='data',bb_tkr=bb_tkr,bb_ykey=bb_ykey,start_dt= start_dt, end_dt=end_dt,adjustment = 'none')
-            df_merge = pd.merge(left = pos, right = price_non_adj, left_index = True, right_index = True, how = 'left')
-    
-            exposure = pd.DataFrame(index = df_merge.index)
-            exposure['qty'] = (df_merge.qty_y * df_merge.qty_x).values
-            
-        elif type_of_exposure == 'net_non_commercials':
-            pos = gets(engine1,type = type_of_exposure, data_tab='vw_data',bb_tkr=bb_tkr,bb_ykey=bb_ykey,start_dt= start_dt, end_dt=end_dt, constr=constr, adjustment = adjustment)
+
+    if type_of_exposure == 'ratio_mm':
+        oi = gets(engine1,type = 'agg_open_interest', data_tab='vw_data',desc_tab='cot_desc',bb_tkr=bb_tkr,bb_ykey=bb_ykey,start_dt= start_dt, end_dt=end_dt)
+        pos1 = gets(engine1,type = 'net_managed_money', data_tab='vw_data',bb_tkr=bb_tkr,bb_ykey=bb_ykey,start_dt= start_dt, end_dt=end_dt)
         
-            price_non_adj = gets(engine1, 'px_last',desc_tab= 'fut_desc',data_tab = 'data',bb_tkr=bb_tkr,bb_ykey=bb_ykey, start_dt =start_dt,end_dt=end_dt, adjustment = 'none')
-            df_merge = pd.merge(left = pos, right = price_non_adj, left_index = True, right_index = True, how = 'left')
+        pos_temp = pd.merge(left = pos1, right = oi, how = 'left', left_index = True, right_index = True, suffixes=('_pos', '_oi'))
+        exposure = pd.DataFrame(index = pos_temp.index,data = (pos_temp.qty_pos/pos_temp.qty_oi),columns = ['qty'])
+        
+        
+    elif type_of_exposure == 'ratio_nonc':
+        oi = gets(engine1,type = 'agg_open_interest', data_tab='vw_data',desc_tab='cot_desc',bb_tkr=bb_tkr,bb_ykey=bb_ykey,start_dt= start_dt, end_dt=end_dt)
+        pos1 = gets(engine1,type = 'net_non_commercials', data_tab='vw_data',bb_tkr=bb_tkr,bb_ykey=bb_ykey,start_dt= start_dt, end_dt=end_dt)
+        
+        pos_temp = pd.merge(left = pos1, right = oi, how = 'left', left_index = True, right_index = True, suffixes=('_pos', '_oi'))
+        exposure = pd.DataFrame(index = pos_temp.index,data = (pos_temp.qty_pos/pos_temp.qty_oi),columns = ['qty'])
+
+        
+    elif type_of_exposure == 'net_managed_money':
+        
+        pos = gets(engine1,type = type_of_exposure, data_tab='vw_data',bb_tkr=bb_tkr,bb_ykey=bb_ykey,start_dt= start_dt, end_dt=end_dt, constr=constr, adjustment = adjustment)
+        
+        price_non_adj = gets(engine1,type = 'px_last',desc_tab= 'fut_desc', data_tab='data',bb_tkr=bb_tkr,bb_ykey=bb_ykey,start_dt= start_dt, end_dt=end_dt,adjustment = 'none')
+        df_merge = pd.merge(left = pos, right = price_non_adj, left_index = True, right_index = True, how = 'left')
+
+        exposure = pd.DataFrame(index = df_merge.index)
+        exposure['qty'] = (df_merge.qty_y * df_merge.qty_x).values
+        
+    elif type_of_exposure == 'net_non_commercials':
+        pos = gets(engine1,type = type_of_exposure, data_tab='vw_data',bb_tkr=bb_tkr,bb_ykey=bb_ykey,start_dt= start_dt, end_dt=end_dt, constr=constr, adjustment = adjustment)
     
-            exposure = pd.DataFrame(index = df_merge.index)
-            exposure['qty'] = (df_merge.qty_y * df_merge.qty_x).values
-        else:
-            print('wrong type_of_exposur')
+        price_non_adj = gets(engine1, 'px_last',desc_tab= 'fut_desc',data_tab = 'data',bb_tkr=bb_tkr,bb_ykey=bb_ykey, start_dt =start_dt,end_dt=end_dt, adjustment = 'none')
+        df_merge = pd.merge(left = pos, right = price_non_adj, left_index = True, right_index = True, how = 'left')
+
+        exposure = pd.DataFrame(index = df_merge.index)
+        exposure['qty'] = (df_merge.qty_y * df_merge.qty_x).values
+    else:
+        print('wrong type_of_exposur')
     
-    except NameError as error:
-        # Output expected NameErrors.
-        logging.exception(error)
-        print('error in Exposure calc')
-    except Exception as exception:
-        # Output unexpected Exceptions.
-        logging.exception(exception, False) 
-        print('error in Exposure calc')
-    
+
     midx = pd.MultiIndex(levels=[['cftc'], ['net_specs']], codes=[[0], [0]])    
     exposure.columns = midx
         
@@ -222,7 +214,6 @@ def getAlpha(alpha,y_diff,y):
         alpha_norm = y[0:250].var()
         
     elif alpha[0] == 'ratio':
-        print('in')
         alpha_diff = 1 ; alpha_norm = 1
     else:
         print('wrong alpha')
@@ -230,28 +221,19 @@ def getAlpha(alpha,y_diff,y):
     return alpha_diff, alpha_norm
     
 def merge_pos_ret(pos,ret):
+    """
+    Parameters
+    ----------
+    pos : 
+        position
+    ret : 
+        ret-matrix
+        
+    """
     cc_ret = pd.merge(pos, ret.iloc[:, :-1], how='inner', left_index=True, right_index=True).dropna()
     cc_ret_diff = pd.merge(pos, ret.iloc[:, :-1], how='inner', left_index=True, right_index=True).diff().dropna()
     return cc_ret, cc_ret_diff
 
-
-#---------------------------------------------test:-------------------------------------------------
-# decay = 0; alpha = ['stdev']; window = 250; maxlag = 250
-# bb_tkr = 'CO'; type_of_exposure = 'net_non_commercials' ;gammatype = 'dom';alpha = ['stdev'];alpha_scale_factor= 0.01;  start_dt='2000-01-01'; end_dt='2100-01-01'
-
-# #  # Get prices:
-# fut = gets(engine1, 'px_last',desc_tab= 'fut_desc',data_tab = 'data', bb_tkr = bb_tkr, adjustment = 'by_ratio')
-
-# #------------------------------------------- Vorberechnungnen:----------------------------------------------
-# #calc rets:
-# ret_series = pd.DataFrame(index = fut.index)
-# ret_series.loc[:,'ret'] = np.log(fut/fut.shift(1))
-# ret_series = ret_series.dropna() #deletes first value
-# ret_series.columns = pd.MultiIndex(levels=[['ret'], [str(0).zfill(3)]], codes=[[0],[0]])
-# getGamma_and_Retmat_obj = getGamma_and_Retmat(ret= ret_series,gammatype = gammatype ,maxlag= maxlag)
-
-##getPos:
-# pos = getexposure(type_of_exposure, bb_tkr)
 
 
 def calcinsampleReg(getGamma_and_Retmat_obj, pos, decay,alpha,alpha_scale_factor,window,maxlag):
@@ -265,7 +247,7 @@ def calcinsampleReg(getGamma_and_Retmat_obj, pos, decay,alpha,alpha_scale_factor
     decay : float
         between 0 and ...
     alpha : []
-        string, at the moment only 'stdev'
+        string, at the moment only 
     window : int 
         normally 250
     maxlag: int
@@ -314,7 +296,7 @@ def calcinsampleReg(getGamma_and_Retmat_obj, pos, decay,alpha,alpha_scale_factor
         y = np.concatenate((cc_ret['cftc'].loc[w_start:w_end,:].values, np.zeros((maxlag, 1))))
         y_diff = np.concatenate((cc_ret_diff['cftc'].loc[w_start:w_end,:].values, np.zeros((maxlag, 1))))
         
-        alpha_obj = getAlpha(['stdev'],y_diff,y)
+        alpha_obj = getAlpha(alpha,y_diff,y)
         alpha_diff = alpha_obj[0] * alpha_scale_factor
         alpha_norm = alpha_obj[1] * alpha_scale_factor
         df_alpha.loc[w_end,'alpha_diff'] = alpha_diff
@@ -366,7 +348,7 @@ def calcinsampleReg(getGamma_and_Retmat_obj, pos, decay,alpha,alpha_scale_factor
 
 
     
-def calcAll(type_of_exposure, bb_tkr,gammatype = 'dom',maxlag = 250, window = 250,alpha_scale_factor = 0.000001, decay = 0, alpha = ['stdev'],start_dt ='1900-01-01',end_dt='2019-12-31',series_id=None,bb_ykey='COMDTY', constr=None, adjustment = None):
+def calcCFTC(type_of_exposure, bb_tkr,alpha,gammatype = 'dom',maxlag = 250, window = 250,alpha_scale_factor = 0.000001, decay = 0,start_dt ='1900-01-01',end_dt='2019-12-31',series_id=None,bb_ykey='COMDTY', constr=None, adjustment = None):
     """
     Parameters
     ----------
@@ -447,7 +429,7 @@ def calcAll(type_of_exposure, bb_tkr,gammatype = 'dom',maxlag = 250, window = 25
 # a = getexposure('net_managed_money', 'KC')
 
 
-# res = calcAll('net_managed_money','CT')
+# res = calcCFTC('net_managed_money','CT')
 
 
 # getGamma_and_Retmat(ret,gammatype,maxlag)
@@ -478,5 +460,25 @@ def calcAll(type_of_exposure, bb_tkr,gammatype = 'dom',maxlag = 250, window = 25
 # cc_ret_diff = pd.merge(pos, ret.iloc[:, :-1], how='inner', left_index=True, right_index=True).diff().dropna()
 
 
+
+
+
+#---------------------------------------------test:-------------------------------------------------
+# decay = 0; alpha = ['stdev']; window = 250; maxlag = 250
+# bb_tkr = 'CO'; type_of_exposure = 'net_non_commercials' ;gammatype = 'dom';alpha = ['stdev'];alpha_scale_factor= 0.01;  start_dt='2000-01-01'; end_dt='2100-01-01'
+
+# #  # Get prices:
+# fut = gets(engine1, 'px_last',desc_tab= 'fut_desc',data_tab = 'data', bb_tkr = bb_tkr, adjustment = 'by_ratio')
+
+# #------------------------------------------- Vorberechnungnen:----------------------------------------------
+# #calc rets:
+# ret_series = pd.DataFrame(index = fut.index)
+# ret_series.loc[:,'ret'] = np.log(fut/fut.shift(1))
+# ret_series = ret_series.dropna() #deletes first value
+# ret_series.columns = pd.MultiIndex(levels=[['ret'], [str(0).zfill(3)]], codes=[[0],[0]])
+# getGamma_and_Retmat_obj = getGamma_and_Retmat(ret= ret_series,gammatype = gammatype ,maxlag= maxlag)
+
+##getPos:
+# pos = getexposure(type_of_exposure, bb_tkr)
 
 
