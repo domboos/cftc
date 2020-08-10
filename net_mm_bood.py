@@ -26,6 +26,24 @@ type_ = 'net_managed_money' # 'net_managed_money',net_non_commercials
 
 
 
+def getR2(dict_result):
+    """
+    Parameters
+    ----------
+    dict_result: dictinoary
+        from the following Loop
+
+    Returns
+    -------
+    R2
+    """
+    df_result = pd.DataFrame(index = list(results), columns = ['OOSR2_1','OOSR2_2'])
+    for i in list(results):
+        df_result.loc[i,'OOSR2_1'] = dict_result[i]['OOSR2'][0]
+        df_result.loc[i,'OOSR2_2'] = dict_result[i]['OOSR2'][1]
+    return df_result
+
+
 print(os.getcwd())
 os.chdir('C:\\Users\\bood\\PycharmProjects\\cftc_neu')
 from cftc_functions import *
