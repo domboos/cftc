@@ -107,14 +107,14 @@ nonc_OOSR2, nonc_insample_scores, nonc_betas = getOOSResults(results_nonc)
 
 writer = pd.ExcelWriter('mm_ratio.xlsx',engine='xlsxwriter')
 mm_OOSR2.to_excel(writer,sheet_name='R2_and_scalingFactor')
-mm_insample_mean_scores.to_excel(writer,sheet_name='insample_scores')
-mm_betas.to_excel(writer,sheet_name = 'betas')
+# mm_insample_mean_scores.to_excel(writer,sheet_name='insample_scores')
+# mm_betas.to_excel(writer,sheet_name = 'betas')
 writer.save()
 
 writer = pd.ExcelWriter('nonc_ratio.xlsx',engine='xlsxwriter')
 nonc_OOSR2.to_excel(writer,sheet_name='R2_and_scalingFactor')
-nonc_insample_scores.to_excel(writer,sheet_name='insample_scores')
-nonc_betas .to_excel(writer,sheet_name = 'betas')
+# nonc_insample_scores.to_excel(writer,sheet_name='insample_scores')
+# nonc_betas .to_excel(writer,sheet_name = 'betas')
 writer.save()
 
 

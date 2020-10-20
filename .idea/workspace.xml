@@ -1,12 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="a4a82a83-9fe2-4135-9117-93a2c57ffe46" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/cftc.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/cftc.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
+    <list default="true" id="a4a82a83-9fe2-4135-9117-93a2c57ffe46" name="Default Changelist" comment="rename">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/DoCalc.py" beforeDir="false" afterPath="$PROJECT_DIR$/DoCalc.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Chart1.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/DoGridSearch_Exposure.py" beforeDir="false" afterPath="$PROJECT_DIR$/DoGridSearch_Exposure.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/DoGridSearch_ratio.py" beforeDir="false" afterPath="$PROJECT_DIR$/DoGridSearch_ratio.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cftc_functions.py" beforeDir="false" afterPath="$PROJECT_DIR$/cftc_functions.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cftc_functions_nightly_betas.py" beforeDir="false" afterPath="$PROJECT_DIR$/cftc_functions_nightly_betas.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/miscAnalysis.py" beforeDir="false" afterPath="$PROJECT_DIR$/miscAnalysis.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/Choice_Gamma.xlsx" beforeDir="false" afterPath="$PROJECT_DIR$/results/Choice_Gamma.xlsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/lastBetas.xlsx" beforeDir="false" afterPath="$PROJECT_DIR$/results/lastBetas.xlsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/mm_exposure.xlsx" beforeDir="false" afterPath="$PROJECT_DIR$/results/mm_exposure.xlsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/nonc_exposure.xlsx" beforeDir="false" afterPath="$PROJECT_DIR$/results/nonc_exposure.xlsx" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -56,39 +62,44 @@
           <entry key="project.closed" value="1" />
           <entry key="project.open.time.0" value="1" />
           <entry key="project.open.time.3" value="1" />
-          <entry key="project.opened" value="2" />
+          <entry key="project.open.time.4" value="2" />
+          <entry key="project.open.time.9" value="1" />
+          <entry key="project.opened" value="5" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.open">
         <counts>
-          <entry key="py" value="2" />
+          <entry key="py" value="12" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.open">
         <counts>
-          <entry key="Python" value="2" />
+          <entry key="Python" value="12" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.edit">
         <counts>
-          <entry key="Python Console" value="22" />
-          <entry key="py" value="36" />
+          <entry key="Python Console" value="34" />
+          <entry key="dummy" value="83" />
+          <entry key="py" value="202" />
+          <entry key="txt" value="6" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
-          <entry key="Python" value="58" />
+          <entry key="PLAIN_TEXT" value="89" />
+          <entry key="Python" value="236" />
         </counts>
       </usages-collector>
     </session>
   </component>
   <component name="FileEditorManager">
-    <leaf>
+    <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/cftc_functions.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="231">
-              <caret line="413" column="57" lean-forward="true" selection-start-line="413" selection-start-column="57" selection-end-line="413" selection-end-column="57" />
+            <state relative-caret-position="-4859">
+              <caret line="117" column="6" selection-start-line="117" selection-start-column="6" selection-end-line="117" selection-end-column="6" />
               <folding>
                 <element signature="e#0#19#0" expanded="true" />
               </folding>
@@ -97,10 +108,58 @@
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/DoCalc.py">
+        <entry file="file://$PROJECT_DIR$/DoGridSearch_Exposure.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="187">
-              <caret line="11" column="37" lean-forward="true" selection-start-line="11" selection-start-column="37" selection-end-line="11" selection-end-column="37" />
+            <state relative-caret-position="459">
+              <caret line="34" selection-start-line="34" selection-end-line="34" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/miscAnalysis.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="306">
+              <caret line="134" column="42" selection-start-line="134" selection-start-column="42" selection-end-line="134" selection-end-column="42" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/cftc_functions_nightly_betas.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="3216">
+              <caret line="387" column="4" lean-forward="true" selection-start-line="387" selection-start-column="4" selection-end-line="387" selection-end-column="4" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/exposure_mm_vs_nonc.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="493">
+              <caret line="31" column="12" lean-forward="true" selection-start-line="31" selection-start-column="12" selection-end-line="31" selection-end-column="12" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/DoGridSearch_ratio.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="1343">
+              <caret line="86" column="42" selection-start-line="86" selection-start-column="42" selection-end-line="86" selection-end-column="42" />
+              <folding>
+                <element signature="e#83#92#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/dfa.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="323">
+              <caret line="22" selection-start-line="22" selection-end-line="22" />
             </state>
           </provider>
         </entry>
@@ -127,14 +186,16 @@
         <option value="$PROJECT_DIR$/rollingReg_out_of_sample.py" />
         <option value="$PROJECT_DIR$/DoCalc.py" />
         <option value="$PROJECT_DIR$/cftc_functions.py" />
+        <option value="$PROJECT_DIR$/net_mm_bood.py" />
+        <option value="$PROJECT_DIR$/DoGridSearch_CalcR2_ratio.py" />
       </list>
     </option>
   </component>
   <component name="ProjectFrameBounds" extendedState="6">
-    <option name="x" value="-1928" />
-    <option name="y" value="-8" />
-    <option name="width" value="1936" />
-    <option name="height" value="1056" />
+    <option name="x" value="-43" />
+    <option name="y" value="116" />
+    <option name="width" value="1920" />
+    <option name="height" value="850" />
   </component>
   <component name="ProjectId" id="1R3AbqHTqNMnvQv0ENz8mZwaWji" />
   <component name="ProjectView">
@@ -150,6 +211,16 @@
               <item name="cftc_neu" type="b2602c69:ProjectViewProjectNode" />
               <item name="cftc_neu" type="462c0819:PsiDirectoryNode" />
             </path>
+            <path>
+              <item name="cftc_neu" type="b2602c69:ProjectViewProjectNode" />
+              <item name="cftc_neu" type="462c0819:PsiDirectoryNode" />
+              <item name="data" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="cftc_neu" type="b2602c69:ProjectViewProjectNode" />
+              <item name="cftc_neu" type="462c0819:PsiDirectoryNode" />
+              <item name="results" type="462c0819:PsiDirectoryNode" />
+            </path>
           </expand>
           <select />
         </subPane>
@@ -158,6 +229,13 @@
   </component>
   <component name="PropertiesComponent">
     <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
+  </component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\grbi\PycharmProjects\cftc_neu\archive" />
+      <recent name="C:\Users\grbi\PycharmProjects\cftc_neu\results" />
+      <recent name="C:\Users\grbi\PycharmProjects\cftc_neu" />
+    </key>
   </component>
   <component name="RunDashboard">
     <option name="ruleStates">
@@ -301,10 +379,31 @@
       <option name="project" value="LOCAL" />
       <updated>1569499840823</updated>
     </task>
-    <option name="localTasksCounter" value="14" />
+    <task id="LOCAL-00014" summary="rename">
+      <created>1598213101772</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1598213101772</updated>
+    </task>
+    <task id="LOCAL-00015" summary="rename">
+      <created>1603223110329</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1603223110329</updated>
+    </task>
+    <task id="LOCAL-00016" summary="rename">
+      <created>1603223143740</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1603223143741</updated>
+    </task>
+    <option name="localTasksCounter" value="17" />
     <servers />
   </component>
-  <component name="TodoView">
+  <component name="TodoView" selected-index="4">
     <todo-panel id="selected-file">
       <is-autoscroll-to-source value="true" />
     </todo-panel>
@@ -314,23 +413,22 @@
     </todo-panel>
   </component>
   <component name="ToolWindowManager">
-    <frame x="-1928" y="-8" width="1936" height="1056" extended-state="6" />
-    <editor active="true" />
+    <frame x="-8" y="-8" width="1936" height="1056" extended-state="6" />
     <layout>
-      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.17913593" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.17860906" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
-      <window_info anchor="bottom" id="Find" order="1" />
+      <window_info anchor="bottom" id="Find" order="1" sideWeight="0.49947312" weight="0.329718" />
       <window_info anchor="bottom" id="Run" order="2" sideWeight="0.49663526" weight="0.53427064" />
       <window_info anchor="bottom" id="Debug" order="3" weight="0.4" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
-      <window_info anchor="bottom" id="TODO" order="6" sideWeight="0.49894625" weight="0.3286334" />
+      <window_info anchor="bottom" id="TODO" order="6" sideWeight="0.49841937" weight="0.31496882" />
       <window_info anchor="bottom" id="Version Control" order="7" />
-      <window_info anchor="bottom" id="Terminal" order="8" sideWeight="0.49841937" weight="0.3286334" />
-      <window_info anchor="bottom" id="Event Log" order="9" sideWeight="0.50105375" side_tool="true" visible="true" weight="0.3286334" />
-      <window_info anchor="bottom" id="Python Console" order="10" sideWeight="0.49894625" visible="true" weight="0.3286334" />
+      <window_info anchor="bottom" id="Terminal" order="8" sideWeight="0.49525815" visible="true" weight="0.15509762" />
+      <window_info anchor="bottom" id="Event Log" order="9" sideWeight="0.50474185" side_tool="true" visible="true" weight="0.15509762" />
+      <window_info anchor="bottom" id="Python Console" order="10" sideWeight="0.49841017" weight="0.50332224" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
@@ -347,23 +445,54 @@
     <MESSAGE value="Rolling Regression, with out of sample" />
     <MESSAGE value="debugging" />
     <MESSAGE value="debug: index out of bounds" />
-    <option name="LAST_COMMIT_MESSAGE" value="debug: index out of bounds" />
+    <MESSAGE value="rename" />
+    <option name="LAST_COMMIT_MESSAGE" value="rename" />
   </component>
   <component name="editorHistoryManager">
     <entry file="file://$PROJECT_DIR$/test2.py">
       <provider selected="true" editor-type-id="text-editor" />
     </entry>
-    <entry file="file://$PROJECT_DIR$/rollingReg.py">
+    <entry file="file://$PROJECT_DIR$/archive/rollingReg.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="228">
           <caret line="202" selection-start-line="202" selection-end-line="202" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/fit_cftc3_bearb.py">
+    <entry file="file://$PROJECT_DIR$/archive/fit_cftc3_bearb.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="119">
           <caret line="7" selection-start-line="7" selection-end-line="7" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/rollingReg_out_of_sample.py" />
+    <entry file="file://$PROJECT_DIR$/DoCalc.py" />
+    <entry file="file://$PROJECT_DIR$/net_mm_bood.py" />
+    <entry file="file://$PROJECT_DIR$/DoGridSearch_Exposure.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="459">
+          <caret line="34" selection-start-line="34" selection-end-line="34" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Chart1.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="238">
+          <caret line="15" column="17" selection-start-line="15" selection-start-column="17" selection-end-line="15" selection-end-column="17" />
+          <folding>
+            <element signature="e#0#19#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/DoGridSearch_ratio.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1343">
+          <caret line="86" column="42" selection-start-line="86" selection-start-column="42" selection-end-line="86" selection-end-column="42" />
+          <folding>
+            <element signature="e#83#92#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -374,18 +503,31 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/rollingReg_out_of_sample.py" />
-    <entry file="file://$PROJECT_DIR$/DoCalc.py">
+    <entry file="file://$PROJECT_DIR$/miscAnalysis.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="187">
-          <caret line="11" column="37" lean-forward="true" selection-start-line="11" selection-start-column="37" selection-end-line="11" selection-end-column="37" />
+        <state relative-caret-position="306">
+          <caret line="134" column="42" selection-start-line="134" selection-start-column="42" selection-end-line="134" selection-end-column="42" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/exposure_mm_vs_nonc.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="493">
+          <caret line="31" column="12" lean-forward="true" selection-start-line="31" selection-start-column="12" selection-end-line="31" selection-end-column="12" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/cftc_functions_nightly_betas.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="3216">
+          <caret line="387" column="4" lean-forward="true" selection-start-line="387" selection-start-column="4" selection-end-line="387" selection-end-column="4" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/cftc_functions.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="231">
-          <caret line="413" column="57" lean-forward="true" selection-start-line="413" selection-start-column="57" selection-end-line="413" selection-end-column="57" />
+        <state relative-caret-position="-4859">
+          <caret line="117" column="6" selection-start-line="117" selection-start-column="6" selection-end-line="117" selection-end-column="6" />
           <folding>
             <element signature="e#0#19#0" expanded="true" />
           </folding>

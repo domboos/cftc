@@ -48,8 +48,13 @@ def gets(engine, type, data_tab='data', desc_tab='cot_desc', series_id=None, bb_
 # print(hh)
 
 #test:
-# exposure = getexposure(type_of_exposure = 'net_non_commercials',bb_tkr = 'W',start_dt ='1900-01-01',end_dt='2019-12-31')
+# exposure = getexposure(type_of_exposure = 'net_managed_money',bb_tkr = 'W',start_dt ='1900-01-01',end_dt='2019-12-31')
+# exposure.plot()
 
+a_adj = gets(engine1,type = 'px_last',desc_tab= 'fut_desc', data_tab='data',bb_tkr='W',start_dt= '1900-01-01',end_dt='2019-12-31',adjustment = 'none')
+a_byratio = gets(engine1,type = 'px_last',desc_tab= 'fut_desc', data_tab='data',bb_tkr='W',start_dt= '1900-01-01',end_dt='2019-12-31',adjustment = 'by_ratio')
+a_adj.plot()
+a_byratio.plot()
 # price_non_adj = gets(engine1, 'px_last',desc_tab= 'fut_desc',data_tab = 'data', bb_tkr='KC', adjustment = 'none')
 
 # bb_ykey='COMDTY'
@@ -547,27 +552,27 @@ def calcCFTC(type_of_exposure, bb_tkr,alpha,gammatype = 'dom',maxlag = 250, wind
 
 
 # #### Tests:
-type_of_exposure = 'net_non_commercials'; bb_tkr= 'QS';regularization ='d1'
-alpha = ['stdev']; gammatype = 'dom';maxlag = 250; window = 250;alpha_scale_factor = 0.000001; decay = 0
-start_dt ='1900-01-01';end_dt='2019-12-31';series_id=None;bb_ykey='COMDTY'; constr=None; adjustment = None;
+# type_of_exposure = 'net_non_commercials'; bb_tkr= 'QS';regularization ='d1'
+# alpha = ['stdev']; gammatype = 'dom';maxlag = 250; window = 250;alpha_scale_factor = 0.000001; decay = 0
+# start_dt ='1900-01-01';end_dt='2019-12-31';series_id=None;bb_ykey='COMDTY'; constr=None; adjustment = None;
 
 
-fut = gets(engine1,type = 'px_last',desc_tab= 'fut_desc',data_tab = 'data', bb_tkr = bb_tkr, adjustment = 'by_ratio', start_dt =start_dt,end_dt=end_dt)
+# fut = gets(engine1,type = 'px_last',desc_tab= 'fut_desc',data_tab = 'data', bb_tkr = bb_tkr, adjustment = 'by_ratio', start_dt =start_dt,end_dt=end_dt)
 
-# #calc rets:
-ret_series = pd.DataFrame(index = fut.index)
-ret_series.loc[:,'ret'] = np.log(fut/fut.shift(1))
-ret_series = ret_series.dropna() #deletes first value
-ret_series.columns = pd.MultiIndex(levels=[['ret'], [str(0).zfill(3)]], codes=[[0],[0]])
+# # #calc rets:
+# ret_series = pd.DataFrame(index = fut.index)
+# ret_series.loc[:,'ret'] = np.log(fut/fut.shift(1))
+# ret_series = ret_series.dropna() #deletes first value
+# ret_series.columns = pd.MultiIndex(levels=[['ret'], [str(0).zfill(3)]], codes=[[0],[0]])
 
-# # getPos:
-pos = getexposure(type_of_exposure,bb_tkr,start_dt =start_dt,end_dt=end_dt,bb_ykey='COMDTY')
+# # # getPos:
+# pos = getexposure(type_of_exposure,bb_tkr,start_dt =start_dt,end_dt=end_dt,bb_ykey='COMDTY')
 
-#get Gamma and Retmat:
-tupl = getGamma_and_Retmat(ret= ret_series,gammatype = gammatype ,maxlag= maxlag,regularization='d1',naildown = True)
-getGamma_and_Retmat_obj = tupl; pos = pos; decay = decay;alpha = alpha;alpha_scale_factor=alpha_scale_factor; window = window; maxlag = maxlag
-ret = ret_series
-gamma = getGamma_and_Retmat_obj[0]
+# #get Gamma and Retmat:
+# tupl = getGamma_and_Retmat(ret= ret_series,gammatype = gammatype ,maxlag= maxlag,regularization='d1',naildown = True)
+# getGamma_and_Retmat_obj = tupl; pos = pos; decay = decay;alpha = alpha;alpha_scale_factor=alpha_scale_factor; window = window; maxlag = maxlag
+# ret = ret_series
+# gamma = getGamma_and_Retmat_obj[0]
 
 
 # #Gammma Check
