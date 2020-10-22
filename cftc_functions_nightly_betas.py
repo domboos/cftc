@@ -16,6 +16,10 @@ import logging
 engine1 = sq.create_engine("postgresql+psycopg2://grbi@iwa-backtest:grbizhaw@iwa-backtest.postgres.database.azure.com:5432/postgres")
 
 
+#TODO: include try and except to identify Userwarning error:
+  #   C:\Users\grbi\Anaconda3\lib\site-packages\pandas\core\reshape\merge.py:618: UserWarning: merging between different levels can give an unintended result (2 levels on the left, 3 on the right)
+  #   warnings.warn(msg, UserWarning)
+
 def gets(engine, type, data_tab='data', desc_tab='cot_desc', series_id=None, bb_tkr=None, bb_ykey='COMDTY',
          start_dt='1900-01-01', end_dt='2100-01-01', constr=None, adjustment = None):
 
@@ -31,6 +35,7 @@ def gets(engine, type, data_tab='data', desc_tab='cot_desc', series_id=None, bb_
         else:
             series_id = pd.read_sql_query("SELECT px_id FROM cftc.fut_desc WHERE bb_tkr = '" + bb_tkr +
                                           "' AND adjustment= '" + adjustment + "' AND bb_ykey = '" + bb_ykey + "' AND data_type = '" + type + "'", engine1)
+            
         series_id = str(series_id.values[0][0])
     else:
         series_id = str(series_id)
@@ -50,16 +55,10 @@ def gets(engine, type, data_tab='data', desc_tab='cot_desc', series_id=None, bb_
 #test:
 # exposure = getexposure(type_of_exposure = 'net_managed_money',bb_tkr = 'W',start_dt ='1900-01-01',end_dt='2019-12-31')
 # exposure.plot()
-
-a_adj = gets(engine1,type = 'px_last',desc_tab= 'fut_desc', data_tab='data',bb_tkr='W',start_dt= '1900-01-01',end_dt='2019-12-31',adjustment = 'none')
-a_byratio = gets(engine1,type = 'px_last',desc_tab= 'fut_desc', data_tab='data',bb_tkr='W',start_dt= '1900-01-01',end_dt='2019-12-31',adjustment = 'by_ratio')
-a_adj.plot()
-a_byratio.plot()
 # price_non_adj = gets(engine1, 'px_last',desc_tab= 'fut_desc',data_tab = 'data', bb_tkr='KC', adjustment = 'none')
-
 # bb_ykey='COMDTY'
-
-def getexposure(type_of_exposure,bb_tkr,start_dt ='1900-01-01',end_dt='2019-12-31',bb_ykey='COMDTY'):
+#TODO: eingrenzung end_dt
+def getexposure(type_of_exposure,bb_tkr,start_dt ='1900-01-01',end_dt='2100-01-01',bb_ykey='COMDTY'):
     """
     Parameters
     ----------
@@ -74,7 +73,6 @@ def getexposure(type_of_exposure,bb_tkr,start_dt ='1900-01-01',end_dt='2019-12-3
     bb_ykey :  str(), optional
         The default is 'COMDTY'.
     
-    
     Returns
     -------
     exposure : pd.DataFrame() with Multiindex (cftc,net_specs)
@@ -82,7 +80,9 @@ def getexposure(type_of_exposure,bb_tkr,start_dt ='1900-01-01',end_dt='2019-12-3
 
 
     """
-    #TODO: include Multiplier
+    #Note: 
+    #- Exposure = mult * fut_adj_none * net_pos
+    #- contract_size =  mult * fut_adj_none
     
 
     if type_of_exposure == 'ratio_mm':
@@ -103,9 +103,10 @@ def getexposure(type_of_exposure,bb_tkr,start_dt ='1900-01-01',end_dt='2019-12-3
         
     elif type_of_exposure == 'net_managed_money':
         
+        #get net pos
         pos = gets(engine1,type = type_of_exposure, data_tab='vw_data',bb_tkr=bb_tkr,bb_ykey=bb_ykey,start_dt= start_dt, end_dt=end_dt, adjustment = None) # constr=constr,
         
-        price_non_adj = gets(engine1,type = 'px_last',desc_tab= 'fut_desc', data_tab='data',bb_tkr=bb_tkr,bb_ykey=bb_ykey,start_dt= start_dt, end_dt=end_dt,adjustment = 'none')
+        price_non_adj = gets(engine1,type = 'contract_size',desc_tab= 'fut_desc', data_tab='vw_data',bb_tkr=bb_tkr,bb_ykey=bb_ykey,start_dt= start_dt, end_dt=end_dt,adjustment = 'none')
         df_merge = pd.merge(left = pos, right = price_non_adj, left_index = True, right_index = True, how = 'left')
 
         exposure = pd.DataFrame(index = df_merge.index)
@@ -114,23 +115,18 @@ def getexposure(type_of_exposure,bb_tkr,start_dt ='1900-01-01',end_dt='2019-12-3
     elif type_of_exposure == 'net_non_commercials':
         pos = gets(engine1,type = type_of_exposure, data_tab='vw_data',bb_tkr=bb_tkr,bb_ykey=bb_ykey,start_dt= start_dt, end_dt=end_dt, adjustment = None) # constr=constr
     
-        price_non_adj = gets(engine1, 'px_last',desc_tab= 'fut_desc',data_tab = 'data',bb_tkr=bb_tkr,bb_ykey=bb_ykey, start_dt =start_dt,end_dt=end_dt, adjustment = 'none')
+        price_non_adj = gets(engine1, 'contract_size',desc_tab= 'fut_desc',data_tab = 'vw_data',bb_tkr=bb_tkr,bb_ykey=bb_ykey, start_dt =start_dt,end_dt=end_dt, adjustment = 'none')
         df_merge = pd.merge(left = pos, right = price_non_adj, left_index = True, right_index = True, how = 'left')
 
         exposure = pd.DataFrame(index = df_merge.index)
         exposure['qty'] = (df_merge.qty_y * df_merge.qty_x).values
     else:
-        print('wrong type_of_exposur')
+        print('wrong type_of_exposure')
     
-
     midx = pd.MultiIndex(levels=[['cftc'], ['net_specs']], codes=[[0], [0]])    
     exposure.columns = midx
         
     return exposure
-    
-      
-    
-    
     
 
 
@@ -138,7 +134,7 @@ def getexposure(type_of_exposure,bb_tkr,start_dt ='1900-01-01',end_dt='2019-12-3
 ####-------------------------Gamma and Returns------------------------------------
 ####------------------------------------------------------------------------------
 
-def getGamma_and_Retmat(ret,gammatype,maxlag,regularization,naildown):
+def getGamma_and_Retmat(ret,gammatype,maxlag,regularization,naildown,naildownvalue):
     """
     Parameters
     ----------
@@ -159,8 +155,7 @@ def getGamma_and_Retmat(ret,gammatype,maxlag,regularization,naildown):
         else:
             return rows, cols
         
-    if gammatype == 'dom':
-        rr = 1/4
+       
         
     gamma = np.zeros((maxlag + 1, maxlag + 1))
             
@@ -172,7 +167,8 @@ def getGamma_and_Retmat(ret,gammatype,maxlag,regularization,naildown):
         #ret[str(i+1).zfill(3)] = ret['001'].shift(i+1)
         
         if gammatype == 'dom':
-            gamma[i, i] = (1 - 1 / (i+1)**rr)
+            rr = 1/4
+            gamma[i, i] = 1 - 1 / (i+1)**rr
         
         elif gammatype == 'flat':
             gamma[i, i] = 1
@@ -189,134 +185,57 @@ def getGamma_and_Retmat(ret,gammatype,maxlag,regularization,naildown):
             gamma[i,i] = np.log(1+ 5*i/maxlag)
  
         elif gammatype == 'sqrt':
-            gamma[i,i] = np.sqrt(i+1)/15
+            gamma[i,i] = np.sqrt(i+1)
             
-        if  i < maxlag:
-            gamma[i, i + 1] = - gamma[i, i]
+        
 
-    #Standardize the gamma Matrix from 0 to 1. 
     if regularization == 'd1':
+        #standardize integral of the function to 1
         print('d1')
-        gsum = gamma.diagonal(1).sum()
+        gsum = gamma.diagonal(0).sum()
         gamma[np.diag_indices_from(gamma)] *= (249/gsum)
         
-        gamma.diagonal(2) = gamma.diagonal(1)[0:249]
-        rows, cols = kth_diag_indices(gamma,2)
-        gamma[rows,cols] = gamma.diagonal(1)[0:249]
+        rows, cols = kth_diag_indices(gamma,1)
+        gamma[rows,cols] = -gamma.diagonal()[0:250]
         
         if naildown == True:
-            gamma[gamma.shape[0]-1,gamma.shape[1]-1] = 100
+            gamma[gamma.shape[0]-1,gamma.shape[1]-1] = naildownvalue
+            gamma = gamma[1:,:]
+        else:
+            gamma =gamma[1:-1,:]
+            
+    elif regularization == 'd2_adj': # ohne nail-Down
+        print('regularization is d2_adj')
+        
+        gsum = gamma.diagonal(0).sum()
+        gamma[np.diag_indices_from(gamma)] *= (249/gsum)
+        
+        
+        rowsm1, colsm1 = kth_diag_indices(gamma,-1)
+        gamma[rowsm1,colsm1] = -gamma.diagonal()[1:]
+       
+        rowsm1, colsm1 = kth_diag_indices(gamma,1)
+        gamma[rowsm1,colsm1] = -gamma.diagonal()[0:-1]
+       
+        gamma[np.diag_indices_from(gamma)] = 2* gamma[np.diag_indices_from(gamma)]
+       
+        
+        #fade out:
+        gamma[maxlag,maxlag-1] = naildownvalue/2
+        gamma[maxlag,maxlag] = -naildownvalue/2
+    
+        if naildown == True:
+            gamma = np.vstack([gamma, np.zeros(maxlag+1)])
+            gamma[gamma.shape[0]-1,gamma.shape[1]-1] = naildownvalue
+            gamma = gamma[1:,:]
+        else:
+            gamma = gamma[1:,:]
     else:
         print('wrong definition of regularization!')
     
-    gamma = gamma[1:,:]
-    
-    
-    #naildown last value: f
-    #TODO: shouldn't it be gamma[:,maxlag] = 0
-    # gamma[maxlag, maxlag] = 0
-    
-        
     # gamma = gamma[:-1,:]
     ret = ret.iloc[maxlag:,:] #delete the rows with nan due to its shift.
     return gamma,ret
-
-# def getGamma_and_Retmat_alt(ret,gammatype,maxlag,regularization,naildown):
-#     """
-#     Parameters
-#     ----------
-#     ret : pd.DataFrame()
-#         log return series
-#     gammatype :  (str):    'flat','linear','dom','arctan','log','sqrt'
-#         How to calc the gamma_function (one of:'flat','linear','dom','arctan','log')
-#     maxlag : int
-#         DESCRIPTION.
-
-#     """
-#     def kth_diag_indices(a, k):
-#         rows, cols = np.diag_indices_from(a)
-#         if k < 0:
-#             return rows[-k:], cols[:k]
-#         elif k > 0:
-#             return rows[:-k], cols[k:]
-#         else:
-#             return rows, cols
-        
-#     if gammatype == 'dom':
-#         rr = 1/4
-        
-#     gamma = np.zeros((maxlag + 1, maxlag + 1))
-            
-#         # loop creates gamma and lagged returns in ret
-#     # ret = ret_series.iloc[0:10,:]
-#     for i in range(0, maxlag + 1):
-#         ret['ret', str(i+1).zfill(3)] = ret['ret', '000'].shift(i+1)
-         
-#         #ret[str(i+1).zfill(3)] = ret['001'].shift(i+1)
-        
-#         if gammatype == 'dom':
-#             gamma[i, i] = 1 - 1 / (i+1)**rr
-        
-#         elif gammatype == 'flat':
-#             gamma[i, i] = 1
-        
-#         elif gammatype == 'linear':
-#             gamma[i, i] = (i+1)/(maxlag+1)
-#             gamma[0,0] = 0
-#             gamma[0,1] = 0
-            
-#         elif gammatype == 'arctan':
-#             gamma[i,i] = np.arctan(0.2*i)
-        
-#         elif gammatype == 'log':
-#             gamma[i,i] = np.log(1+ 5*i/maxlag)
- 
-#         elif gammatype == 'sqrt':
-#             gamma[i,i] = np.sqrt(i+1)/15
-            
-#         if  i < maxlag:
-#             gamma[i, i + 1] = - gamma[i, i]
-
-#     #Standardize the gamma Matrix from 0 to 1. 
-#     if regularization == 'd1':
-#         print('d1')
-#         gmax = gamma.max()
-#         gamma[np.diag_indices_from(gamma)] /= gmax
-        
-        
-#         rows, cols = kth_diag_indices(gamma,1)
-#         gamma[rows,cols] /= gmax
-        
-#         if naildown == True:
-#             gamma[gamma.shape[0]-1,gamma.shape[1]-1] = 100
-        
-#     elif regularization == 'd2_adj': # ohne nail-Down
-#         print('d2_adj')
-#         rowsm1, colsm1 = kth_diag_indices(gamma,-1)
-#         gamma[rowsm1,colsm1] =-gamma[rowsm1,colsm1+1]
-    
-#         gamma[np.diag_indices_from(gamma)] = gamma[np.diag_indices_from(gamma)]*2
-#         gamma /= gamma.max()
-    
-#         #naildown last value: f
-#         gamma[maxlag,maxlag-1] = -1
-#         gamma[maxlag,maxlag] = 1
-        
-#         if naildown == True:
-#             gamma = np.vstack([gamma, np.zeros(maxlag+1)])
-#             gamma[gamma.shape[0]-1,gamma.shape[1]-1] = 100
-    
-#     gamma = gamma[1:,:]
-    
-    
-#     #naildown last value: f
-#     #TODO: shouldn't it be gamma[:,maxlag] = 0
-#     # gamma[maxlag, maxlag] = 0
-    
-        
-#     # gamma = gamma[:-1,:]
-#     ret = ret.iloc[maxlag:,:] #delete the rows with nan due to its shift.
-#     return gamma,ret
 
 
 
@@ -398,10 +317,6 @@ def calcinsampleReg(getGamma_and_Retmat_obj, pos, decay,alpha,alpha_scale_factor
     insample_betas = {}
     
     for idx,day in enumerate(cc_ret.index[0:-(window+1)]):
-        
-        # if tpy == []:
-        #     print('no match')
-        #     break
     
         ##  rolling window parameters:
         w_start = cc_ret.index[idx]
@@ -416,7 +331,7 @@ def calcinsampleReg(getGamma_and_Retmat_obj, pos, decay,alpha,alpha_scale_factor
             cc_ret_est = cc_ret['ret'].loc[w_start:w_end,:].values
             cc_ret_diff_est = cc_ret_diff['ret'].loc[w_start:w_end,:].values
          
-        #TODO: Changed smth here : gamma.shape --> maxlag
+        #TODO: Changed smth here : gamma.shape --> maxlag ?? resolved?
         y = np.concatenate((cc_ret['cftc'].loc[w_start:w_end,:].values, np.zeros((gamma.shape[0], 1))))
         y_diff = np.concatenate((cc_ret_diff['cftc'].loc[w_start:w_end,:].values, np.zeros((gamma.shape[0], 1))))
         
@@ -430,7 +345,7 @@ def calcinsampleReg(getGamma_and_Retmat_obj, pos, decay,alpha,alpha_scale_factor
         X_dod_diff = np.concatenate((cc_ret_diff_est,gamma * alpha_diff), axis=0)
         
     ##  fit the models
-        models.loc[w_end, (alpha, 'level', 'dod')] = sm.OLS(y,X_dod).fit() #sm.add_constant(X_dod)
+        models.loc[w_end, (alpha, 'level', 'dod')] = sm.OLS(y,X_dod).fit() 
         models.loc[w_end, (alpha, 'diff_', 'dod')] = sm.OLS(y_diff,X_dod_diff).fit()
     
     ##  Rsquared - insample:
@@ -482,7 +397,7 @@ def calcinsampleReg(getGamma_and_Retmat_obj, pos, decay,alpha,alpha_scale_factor
     result['OOSR2'] = pd.DataFrame({'oosR2_diff':oosR2_diff,'oosR2_lvl': oosR2_lvl}, index =[0])
     result['alpha'] = df_alpha
     result['insample_betas'] = insample_betas
-    result['last_betas'] = models.loc[w_end, (alpha, 'diff_', 'dod')][0].params
+    # result['last_betas'] = models.loc[w_end, (alpha, 'diff_', 'dod')][0].params
     result['gamma'] = gamma
     return result
 
@@ -491,7 +406,7 @@ def calcinsampleReg(getGamma_and_Retmat_obj, pos, decay,alpha,alpha_scale_factor
 
 
     
-def calcCFTC(type_of_exposure, bb_tkr,alpha,gammatype = 'dom',maxlag = 250, window = 250,alpha_scale_factor = 1, decay = 0,start_dt ='1900-01-01',end_dt='2019-12-31',series_id=None,bb_ykey='COMDTY', constr=None, adjustment = None,regularization ='d1',naildown= False):
+def calcCFTC(type_of_exposure, bb_tkr,alpha,gammatype = 'dom',maxlag = 250, window = 250,alpha_scale_factor = 1, decay = 0,start_dt ='1900-01-01',end_dt='2019-12-31',series_id=None,bb_ykey='COMDTY', constr=None, adjustment = None,regularization ='d1',naildown= False,naildownvalue =5):
     """
     Parameters
     ----------
@@ -543,7 +458,7 @@ def calcCFTC(type_of_exposure, bb_tkr,alpha,gammatype = 'dom',maxlag = 250, wind
     pos = getexposure(type_of_exposure,bb_tkr,start_dt =start_dt,end_dt=end_dt,bb_ykey='COMDTY')
     
     #get Gamma and Retmat:
-    tupl = getGamma_and_Retmat(ret= ret_series,gammatype = gammatype ,maxlag= maxlag,regularization=regularization,naildown = naildown)
+    tupl = getGamma_and_Retmat(ret= ret_series,gammatype = gammatype ,maxlag= maxlag,regularization=regularization,naildown = naildown,naildownvalue = naildownvalue)
     
     res1 = calcinsampleReg(getGamma_and_Retmat_obj = tupl, pos = pos, decay = decay,alpha = alpha,alpha_scale_factor=alpha_scale_factor, window = window, maxlag = maxlag)
     
