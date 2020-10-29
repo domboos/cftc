@@ -5,7 +5,7 @@ Created on Tue Aug 25 19:10:00 2020
 @author: grbi
 """
 
-
+ 
 import pandas as pd
 import numpy as np
 import sqlalchemy as sq
