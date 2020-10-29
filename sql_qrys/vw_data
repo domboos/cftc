@@ -18,7 +18,7 @@ SELECT cd2.px_id,
 	 LEFT JOIN cftc.fut_desc cd2 ON cd.bb_tkr = cd2.bb_tkr and cd.bb_ykey = cd2.bb_ykey
 	 LEFT JOIN cftc.fut_mult mult ON cd.bb_tkr = mult.bb_tkr and cd.bb_ykey = mult.bb_ykey
 	 WHERE cd.roll::text = 'active_futures'::text AND cd.adjustment::text = 'none'::text
-	 AND cd.data_type::text = 'px_last'::text AND cd2.data_type::text = 'contrac_size'::text
+	 AND cd.data_type::text = 'px_last'::text AND cd2.data_type::text = 'contract_size'::text
 	 AND cd2.roll::text = 'active_futures'::text AND cd2.adjustment::text = 'none'::text
 
 WITH DATA;

@@ -32,8 +32,11 @@ for tk in multiplier.index[4:]:
     x_mm = mm_expo_sf.loc[tk,'scalingFactor']/ multiplier.loc[tk,'multiplier']
     temp_mm  = calcCFTC(type_of_exposure ='net_managed_money' ,gammatype = 'dom',alpha = ['stdev'],alpha_scale_factor=x_mm, bb_tkr = tk, start_dt='2000-12-31', end_dt='2019-12-31',regularization='d1')
 
-    w_results.loc[tk,'R2'] = temp_mm['OOSR2'].iloc[0,0]
-    w_results.loc[tk,'scalingFactor'] = x_mm
+    results.loc[tk,'R2'] = temp_mm['OOSR2'].iloc[0,0]
+    results.loc[tk,'scalingFactor'] = x_mm
+    
+    
+temp_mm  = calcCFTC(type_of_exposure ='net_managed_money' ,gammatype = 'dom',alpha = ['stdev'],alpha_scale_factor=x_mm, bb_tkr = tk, start_dt='2000-12-31', end_dt='2019-12-31',regularization='d1')
 
 
 ##### Test Exposure ###### 
