@@ -5,24 +5,28 @@ Created on Tue Aug 25 19:10:00 2020
 @author: grbi
 """
 
-
-import pandas as pd
 import numpy as np
 import sqlalchemy as sq
 import statsmodels.api as sm
-import statsmodels.formula.api as smf
-import logging
+from datetime import datetime
 
-engine1 = sq.create_engine("postgresql+psycopg2://grbi@iwa-backtest:grbizhaw@iwa-backtest.postgres.database.azure.com:5432/postgres")
+from pandas.io.sql import SQLTable
 
+def _execute_insert(self, conn, keys, data_iter):
+    print("Using monkey-patched _execute_insert")
+    data = [dict(zip(keys, row)) for row in data_iter]
+    conn.execute(self.table.insert().values(data))
 
-#TODO: include try and except to identify Userwarning error:
-  #   C:\Users\grbi\Anaconda3\lib\site-packages\pandas\core\reshape\merge.py:618: UserWarning: merging between different levels can give an unintended result (2 levels on the left, 3 on the right)
-  #   warnings.warn(msg, UserWarning)
+SQLTable._execute_insert = _execute_insert
+
+import pandas as pd
+
+engine1 = sq.create_engine(
+    "postgresql+psycopg2://grbi@iwa-backtest:grbizhaw@iwa-backtest.postgres.database.azure.com:5432/postgres")
+
 
 def gets(engine, type, data_tab='data', desc_tab='cot_desc', series_id=None, bb_tkr=None, bb_ykey='COMDTY',
-         start_dt='1900-01-01', end_dt='2100-01-01', constr=None, adjustment = None):
-
+         start_dt='1900-01-01', end_dt='2100-01-01', constr=None, adjustment=None):
     if constr is None:
         constr = ''
     else:
@@ -34,31 +38,20 @@ def gets(engine, type, data_tab='data', desc_tab='cot_desc', series_id=None, bb_
                                           "' AND bb_ykey = '" + bb_ykey + "' AND cot_type = '" + type + "'", engine1)
         else:
             series_id = pd.read_sql_query("SELECT px_id FROM cftc.fut_desc WHERE bb_tkr = '" + bb_tkr +
-                                          "' AND adjustment= '" + adjustment + "' AND bb_ykey = '" + bb_ykey + "' AND data_type = '" + type + "'", engine1)
-            
+                                          "' AND adjustment= '" + adjustment + "' AND bb_ykey = '" + bb_ykey +
+                                          "' AND data_type = '" + type + "'", engine1)
+
         series_id = str(series_id.values[0][0])
     else:
         series_id = str(series_id)
 
-    print(series_id)
-
-    h_1 = " WHERE px_date >= '" + str(start_dt) +  "' AND px_date <= '" + str(end_dt) + "' AND px_id = "
+    h_1 = " WHERE px_date >= '" + str(start_dt) + "' AND px_date <= '" + str(end_dt) + "' AND px_id = "
     h_2 = series_id + constr + " order by px_date"
     fut = pd.read_sql_query('SELECT px_date, qty FROM cftc.' + data_tab + h_1 + h_2, engine, index_col='px_date')
     return fut
 
 
-# test
-# hh = gets(engine1, 'agg_open_interest', data_tab='vw_data', bb_tkr='W')
-# print(hh)
-
-#test:
-# exposure = getexposure(type_of_exposure = 'net_managed_money',bb_tkr = 'W',start_dt ='1900-01-01',end_dt='2019-12-31')
-# exposure.plot()
-# price_non_adj = gets(engine1, 'px_last',desc_tab= 'fut_desc',data_tab = 'data', bb_tkr='KC', adjustment = 'none')
-# bb_ykey='COMDTY'
-#TODO: eingrenzung end_dt
-def getexposure(type_of_exposure,bb_tkr,start_dt ='1900-01-01',end_dt='2100-01-01',bb_ykey='COMDTY'):
+def getexposure(type_of_trader, norm, bb_tkr, start_dt='1900-01-01', end_dt='2100-01-01', bb_ykey='COMDTY'):
     """
     Parameters
     ----------
@@ -72,7 +65,7 @@ def getexposure(type_of_exposure,bb_tkr,start_dt ='1900-01-01',end_dt='2100-01-0
         The default is '2100-01-01'.
     bb_ykey :  str(), optional
         The default is 'COMDTY'.
-    
+
     Returns
     -------
     exposure : pd.DataFrame() with Multiindex (cftc,net_specs)
@@ -80,61 +73,42 @@ def getexposure(type_of_exposure,bb_tkr,start_dt ='1900-01-01',end_dt='2100-01-0
 
 
     """
-    #Note: 
-    #- Exposure = mult * fut_adj_none * net_pos
-    #- contract_size =  mult * fut_adj_none
-    
+    # Note:
+    # - Exposure = mult * fut_adj_none * net_pos
+    # - contract_size =  mult * fut_adj_none
 
-    if type_of_exposure == 'ratio_mm':
-        oi = gets(engine1,type = 'agg_open_interest', data_tab='vw_data',desc_tab='cot_desc',bb_tkr=bb_tkr,bb_ykey=bb_ykey,start_dt= start_dt, end_dt=end_dt)
-        pos1 = gets(engine1,type = 'net_managed_money', data_tab='vw_data',bb_tkr=bb_tkr,bb_ykey=bb_ykey,start_dt= start_dt, end_dt=end_dt)
-        
-        pos_temp = pd.merge(left = pos1, right = oi, how = 'left', left_index = True, right_index = True, suffixes=('_pos', '_oi'))
-        exposure = pd.DataFrame(index = pos_temp.index,data = (pos_temp.qty_pos/pos_temp.qty_oi),columns = ['qty'])
-        
-        
-    elif type_of_exposure == 'ratio_nonc':
-        oi = gets(engine1,type = 'agg_open_interest', data_tab='vw_data',desc_tab='cot_desc',bb_tkr=bb_tkr,bb_ykey=bb_ykey,start_dt= start_dt, end_dt=end_dt)
-        pos1 = gets(engine1,type = 'net_non_commercials', data_tab='vw_data',bb_tkr=bb_tkr,bb_ykey=bb_ykey,start_dt= start_dt, end_dt=end_dt)
-        
-        pos_temp = pd.merge(left = pos1, right = oi, how = 'left', left_index = True, right_index = True, suffixes=('_pos', '_oi'))
-        exposure = pd.DataFrame(index = pos_temp.index,data = (pos_temp.qty_pos/pos_temp.qty_oi),columns = ['qty'])
+    pos = gets(engine1, type=type_of_trader, data_tab='vw_data', bb_tkr=bb_tkr, bb_ykey=bb_ykey,
+               start_dt=start_dt, end_dt=end_dt, adjustment=None)  # constr=constr,
 
-        
-    elif type_of_exposure == 'net_managed_money':
-        
-        #get net pos
-        pos = gets(engine1,type = type_of_exposure, data_tab='vw_data',bb_tkr=bb_tkr,bb_ykey=bb_ykey,start_dt= start_dt, end_dt=end_dt, adjustment = None) # constr=constr,
-        
-        price_non_adj = gets(engine1,type = 'contract_size',desc_tab= 'fut_desc', data_tab='vw_data',bb_tkr=bb_tkr,bb_ykey=bb_ykey,start_dt= start_dt, end_dt=end_dt,adjustment = 'none')
-        df_merge = pd.merge(left = pos, right = price_non_adj, left_index = True, right_index = True, how = 'left')
+    if norm == 'percent_oi':
+        oi = gets(engine1, type='agg_open_interest', data_tab='vw_data', desc_tab='cot_desc', bb_tkr=bb_tkr,
+                  bb_ykey=bb_ykey, start_dt=start_dt, end_dt=end_dt)
+        pos_temp = pd.merge(left=pos, right=oi, how='left', left_index=True, right_index=True,
+                            suffixes=('_pos', '_oi'))
+        exposure = pd.DataFrame(index=pos_temp.index, data=(pos_temp.qty_pos / pos_temp.qty_oi), columns=['qty'])
 
-        exposure = pd.DataFrame(index = df_merge.index)
+    elif norm == 'exposure':
+        price_non_adj = gets(engine1, type='contract_size', desc_tab='fut_desc', data_tab='vw_data', bb_tkr=bb_tkr,
+                             bb_ykey=bb_ykey, start_dt=start_dt, end_dt=end_dt, adjustment='none')
+        df_merge = pd.merge(left=pos, right=price_non_adj, left_index=True, right_index=True, how='left')
+
+        exposure = pd.DataFrame(index=df_merge.index)
         exposure['qty'] = (df_merge.qty_y * df_merge.qty_x).values
-        
-    elif type_of_exposure == 'net_non_commercials':
-        pos = gets(engine1,type = type_of_exposure, data_tab='vw_data',bb_tkr=bb_tkr,bb_ykey=bb_ykey,start_dt= start_dt, end_dt=end_dt, adjustment = None) # constr=constr
-    
-        price_non_adj = gets(engine1, 'contract_size',desc_tab= 'fut_desc',data_tab = 'vw_data',bb_tkr=bb_tkr,bb_ykey=bb_ykey, start_dt =start_dt,end_dt=end_dt, adjustment = 'none')
-        df_merge = pd.merge(left = pos, right = price_non_adj, left_index = True, right_index = True, how = 'left')
 
-        exposure = pd.DataFrame(index = df_merge.index)
-        exposure['qty'] = (df_merge.qty_y * df_merge.qty_x).values
     else:
         print('wrong type_of_exposure')
-    
-    midx = pd.MultiIndex(levels=[['cftc'], ['net_specs']], codes=[[0], [0]])    
+
+    midx = pd.MultiIndex(levels=[['cftc'], ['net_specs']], codes=[[0], [0]])
     exposure.columns = midx
-        
+
     return exposure
-    
 
 
 ####------------------------------------------------------------------------------
 ####-------------------------Gamma and Returns------------------------------------
 ####------------------------------------------------------------------------------
 
-def getGamma_and_Retmat(ret,gammatype,maxlag,regularization,naildown,naildownvalue):
+def getGamma(maxlag, regularization='d1', gammatype='sqrt', gammapara=1, naildownvalue0=1, naildownvalue1=1):
     """
     Parameters
     ----------
@@ -146,6 +120,7 @@ def getGamma_and_Retmat(ret,gammatype,maxlag,regularization,naildown,naildownval
         DESCRIPTION.
 
     """
+
     def kth_diag_indices(a, k):
         rows, cols = np.diag_indices_from(a)
         if k < 0:
@@ -154,347 +129,191 @@ def getGamma_and_Retmat(ret,gammatype,maxlag,regularization,naildown,naildownval
             return rows[:-k], cols[k:]
         else:
             return rows, cols
-        
-       
-        
-    gamma = np.zeros((maxlag + 1, maxlag + 1))
-            
-        # loop creates gamma and lagged returns in ret
-    # ret = ret_series.iloc[0:10,:]
-    for i in range(0, maxlag + 1):
-        ret['ret', str(i+1).zfill(3)] = ret['ret', '000'].shift(i+1)
-         
-        #ret[str(i+1).zfill(3)] = ret['001'].shift(i+1)
-        
+
+    gamma = np.zeros((maxlag, maxlag))
+
+    t = maxlag
+    if regularization == 'd2':
+        t -= 1
+
+    # loop creates gamma
+    for i in range(0, t):
+
         if gammatype == 'dom':
-            rr = 1/4
-            gamma[i, i] = 1 - 1 / (i+1)**rr
-        
+            gamma[i, i] = 1 - 1 / (i + 1) ** gammapara
+
         elif gammatype == 'flat':
             gamma[i, i] = 1
-        
+
+        elif gammatype == 'linear1':
+            if i>0:
+                gamma[i, i] = (i + 1) / (maxlag + 1)
+
         elif gammatype == 'linear':
-            gamma[i, i] = (i+1)/(maxlag+1)
-            gamma[0,0] = 0
-            gamma[0,1] = 0
-            
+            gamma[i, i] = (i + 1) / (maxlag + 1)
+
         elif gammatype == 'arctan':
-            gamma[i,i] = np.arctan(0.2*i)
-        
+            gamma[i, i] = np.arctan(gammapara * i)
+
         elif gammatype == 'log':
-            gamma[i,i] = np.log(1+ 5*i/maxlag)
- 
+            gamma[i, i] = np.log(1 + gammapara * i / maxlag)
+
         elif gammatype == 'sqrt':
-            gamma[i,i] = np.sqrt(i+1)
-            
-        
+            gamma[i, i] = np.sqrt(i + 1)
 
-    if regularization == 'd1':
-        #standardize integral of the function to 1
-        print('d1')
-        gsum = gamma.diagonal(0).sum()
-        gamma[np.diag_indices_from(gamma)] *= (249/gsum)
-        
-        rows, cols = kth_diag_indices(gamma,1)
-        gamma[rows,cols] = -gamma.diagonal()[0:250]
-        
-        if naildown == True:
-            gamma[gamma.shape[0]-1,gamma.shape[1]-1] = naildownvalue
-            gamma = gamma[1:,:]
-        else:
-            gamma =gamma[1:-1,:]
-            
-    elif regularization == 'd2_adj': # ohne nail-Down
-        print('regularization is d2_adj')
-        
-        gsum = gamma.diagonal(0).sum()
-        gamma[np.diag_indices_from(gamma)] *= (249/gsum)
-        
-        
-        rowsm1, colsm1 = kth_diag_indices(gamma,-1)
-        gamma[rowsm1,colsm1] = -gamma.diagonal()[1:]
-       
-        rowsm1, colsm1 = kth_diag_indices(gamma,1)
-        gamma[rowsm1,colsm1] = -gamma.diagonal()[0:-1]
-       
-        gamma[np.diag_indices_from(gamma)] = 2* gamma[np.diag_indices_from(gamma)]
-       
-        
-        #fade out:
-        gamma[maxlag,maxlag-1] = naildownvalue/2
-        gamma[maxlag,maxlag] = -naildownvalue/2
-    
-        if naildown == True:
-            gamma = np.vstack([gamma, np.zeros(maxlag+1)])
-            gamma[gamma.shape[0]-1,gamma.shape[1]-1] = naildownvalue
-            gamma = gamma[1:,:]
-        else:
-            gamma = gamma[1:,:]
-    else:
-        print('wrong definition of regularization!')
-    
-    # gamma = gamma[:-1,:]
-    ret = ret.iloc[maxlag:,:] #delete the rows with nan due to its shift.
-    return gamma,ret
+    # standardize sum of diagonal values to 1
+    gsum = gamma.diagonal(0).sum()
+    gamma[np.diag_indices_from(gamma)] /= gsum
+
+    # default case
+    rows, cols = kth_diag_indices(gamma, 1)
+    gamma[rows, cols] = -gamma.diagonal()[:-1]
+    # naildown
+
+    if regularization == 'd2':
+
+        gamma[np.diag_indices_from(gamma)] /= 2
+
+        rowsm1, colsm1 = kth_diag_indices(gamma, 2)
+        gamma[rowsm1, colsm1] = gamma.diagonal()[:-2]
+
+        # fade out:
+        gamma[maxlag - 1, maxlag - 1] = naildownvalue1
+        gamma[maxlag - 1, maxlag] = -naildownvalue1
+
+    # nail_down and delete zero rows
+    gamma[gamma.shape[0] - 1, gamma.shape[1] - 1] = naildownvalue0
+    gamma = np.delete(gamma, np.where(~gamma.any(axis=1))[0], axis=0)
+
+    return gamma
 
 
-
-def getAlpha(alpha,y_diff,y):
+def getRetMat(ret, maxlag):
     """
     Parameters
     ----------
-    alpha : str()
+    ret : pd.DataFrame()
+        log return series
+    maxlag : int
+        DESCRIPTION.
+
+    """
+
+    # loop creates lagged returns in ret
+    for i in range(0, maxlag):
+        ret['ret', str(i + 1).zfill(3)] = ret['ret', '000'].shift(i + 1)
+
+    ret = ret.iloc[maxlag:, :]  # delete the rows with nan due to its shift.
+    return ret
+
+
+def getAlpha(alpha_type, y):
+    """
+    Parameters
+    ----------
+    alpha_type : str()
         either 'stdev',var'
-    y_diff : TYPE
-        DESCRIPTION.
-    y : TYPE
-        DESCRIPTION.
+    y : np vector
+        independent variable
 
     Returns
     -------
-    alpha_diff : TYPE
-        DESCRIPTION.
-    alpha_norm : TYPE
-        DESCRIPTION.
+    alpha : value
+        scaling factor for gamma matrix
 
     """
-    if alpha[0] == 'stdev':
-        alpha_diff = y_diff[0:250].std()
-        alpha_norm = y[0:250].std()
-        
-    elif alpha[0] == 'var':
-        alpha_diff = y_diff[0:250].var()
-        alpha_norm = y[0:250].var()
-        
-    elif alpha[0] == 'const':
-        alpha_diff = 1 ; alpha_norm = 1
+    if alpha_type == 'std':
+        alpha = y.std()[0]
+
+    elif alpha_type == 'var':
+        alpha = y.var()[0]
+
     else:
-        print('wrong alpha')
-    
-    return alpha_diff, alpha_norm
-    
-def merge_pos_ret(pos,ret):
-    
-    cc_ret = pd.merge(pos, ret.iloc[:, :-1], how='inner', left_index=True, right_index=True).dropna()
-    cc_ret_diff = pd.merge(pos, ret.iloc[:, :-1], how='inner', left_index=True, right_index=True).diff().dropna()
-    return cc_ret, cc_ret_diff
+        alpha = 1
+
+    return alpha
 
 
-def calcinsampleReg(getGamma_and_Retmat_obj, pos, decay,alpha,alpha_scale_factor,window,maxlag):
-    """
-    Parameters
-    ----------
-    getGamma_and_Retmat_obj : TYPE
-        return object from getGamma_and_Retmat
-    pos : TYPE
-        object from get exposure
-    decay : float
-        between 0 and ...
-    alpha : []
-        string, at the moment only 
-    window : int 
-        normally 250
-    maxlag: int
-        Maximum lag for returns (Normally 250)
+def merge_pos_ret(pos, ret, diff):
+    if diff:
+        cr = pd.merge(pos, ret.iloc[:, :-1], how='inner', left_index=True, right_index=True).diff().dropna()
+    else:   #level
+        cr = pd.merge(pos, ret.iloc[:, :-1], how='inner', left_index=True, right_index=True).dropna()
+    return cr
 
-    Returns
-    -------
-    None.
 
-    """
-    # get Gamma and ret:
-    gamma, ret  = getGamma_and_Retmat_obj
-    
-    # Merge pos and rets:
-    cc_ret, cc_ret_diff = merge_pos_ret(pos,ret)
-    
-    model_idx = cc_ret.index
-    model_clm = pd.MultiIndex.from_product([alpha, ['level', 'diff_'], ['dod']])
-    models = pd.DataFrame(index=model_idx, columns=model_clm)
-    scores = pd.DataFrame(index=model_idx, columns=model_clm)
-    prediction = pd.DataFrame(index=model_idx, columns=model_clm)
-    df_alpha = pd.DataFrame(index = model_idx, columns =['alpha_diff','alpha_dod'])
-    insample_betas = {}
-    
-    for idx,day in enumerate(cc_ret.index[0:-(window+1)]):
-    
-        ##  rolling window parameters:
-        w_start = cc_ret.index[idx]
-        w_end = cc_ret.index[idx + window]
-        forecast_period = cc_ret.index[idx+window+1] # includes the day x in [:x]
-        
-        if decay !=0:
-            retFac = np.fromfunction(lambda i, j: decay ** i, cc_ret['ret'].loc[w_start:w_end,:].values.shape)[::-1]
-            cc_ret_est = cc_ret['ret'].loc[w_start:w_end,:].values * retFac
-            cc_ret_diff_est = cc_ret_diff['ret'].loc[w_start:w_end,:].values*retFac
+# MAIN
+
+model_list = loadedData = pd.read_sql_query("SELECT * FROM cftc.model_desc ORDER BY bb_tkr, bb_ykey", engine1)
+
+for idx, model in model_list.iterrows():
+    # feching and structure returns
+    print(datetime.now().strftime("%H:%M:%S"))
+    if idx == 0 or (bb_tkr != model.bb_tkr or bb_ykey != model.bb_ykey):
+        bb_tkr = model.bb_tkr
+        bb_ykey = model.bb_ykey
+        fut = gets(engine1, type='px_last', desc_tab='fut_desc', data_tab='data', bb_tkr=bb_tkr, adjustment='by_ratio')
+        # calc rets:
+        ret_series = pd.DataFrame(index=fut.index)
+        ret_series.loc[:, 'ret'] = np.log(fut / fut.shift(1))
+        ret_series = ret_series.dropna()  # deletes first value
+        ret_series.columns = pd.MultiIndex(levels=[['ret'], [str(0).zfill(3)]], codes=[[0], [0]])
+
+    # decay
+    window = model.est_window
+    lags = np.arange(1, model.lookback+1)
+    beta = pd.DataFrame(columns={'model_id', 'px_date', 'return_lag', 'qty'})
+    beta['return_lag'] = lags
+    beta['model_id'] = model.model_id
+    fcast = pd.DataFrame(data=[model.model_id], columns={'model_id'})
+    if model.decay is not None:
+        retFac = np.fromfunction(lambda i, j: model.decay ** i, [window, model.lookback])[::-1]
+
+    # gamma
+    gamma = getGamma(maxlag=model.lookback, regularization=model.regularization, gammatype=model.gamma_type,
+                     gammapara=model.gamma_para, naildownvalue0=model.naildown_value0,
+                     naildownvalue1=model.naildown_value0)
+
+    # fecthing cot, crate lagged returns and merge
+    pos = getexposure(type_of_trader=model.cot_type, norm=model.cot_norm, bb_tkr=bb_tkr, bb_ykey=bb_ykey)
+    ret = getRetMat(ret_series, model.lookback)
+    cr = merge_pos_ret(pos, ret, model.diff)
+
+    for idx2, day in enumerate(cr.index[0:-(window + 2)]):
+
+        # rolling window parameters:
+        w_start = cr.index[idx2]
+        w_end = cr.index[idx2 + window]
+        forecast_period = cr.index[idx2 + window + 2]  # includes the day x in [:x]
+
+        if model.decay is not None:
+            x0 = cr['ret'].loc[w_start:w_end, :].values * retFac
+            y0 = cr['cftc'].loc[w_start:w_end, :] * retFac[:, 1] # not tested
         else:
-            cc_ret_est = cc_ret['ret'].loc[w_start:w_end,:].values
-            cc_ret_diff_est = cc_ret_diff['ret'].loc[w_start:w_end,:].values
-         
-        #TODO: Changed smth here : gamma.shape --> maxlag ?? resolved?
-        y = np.concatenate((cc_ret['cftc'].loc[w_start:w_end,:].values, np.zeros((gamma.shape[0], 1))))
-        y_diff = np.concatenate((cc_ret_diff['cftc'].loc[w_start:w_end,:].values, np.zeros((gamma.shape[0], 1))))
-        
-        alpha_obj = getAlpha(alpha,y_diff,y)
-        alpha_diff = alpha_obj[0] * alpha_scale_factor
-        alpha_norm = alpha_obj[1] * alpha_scale_factor
-        df_alpha.loc[w_end,'alpha_diff'] = alpha_diff
-        df_alpha.loc[w_end,'alpha_dod'] = alpha_norm
-         
-        X_dod = np.concatenate((cc_ret_est,gamma * alpha_norm), axis=0)
-        X_dod_diff = np.concatenate((cc_ret_diff_est,gamma * alpha_diff), axis=0)
-        
-    ##  fit the models
-        models.loc[w_end, (alpha, 'level', 'dod')] = sm.OLS(y,X_dod).fit() 
-        models.loc[w_end, (alpha, 'diff_', 'dod')] = sm.OLS(y_diff,X_dod_diff).fit()
-    
-    ##  Rsquared - insample:
-        scores.loc[w_end, (alpha, 'level', 'dod')] = models.loc[w_end, (alpha, 'level', 'dod')][0].rsquared
-        scores.loc[w_end, (alpha, 'diff_', 'dod')] = models.loc[w_end, (alpha, 'diff_', 'dod')][0].rsquared
-        
-    ##  forecast    
-        prediction.loc[forecast_period, (alpha, 'diff_', 'dod')] = \
-        sum(models.loc[w_end, (alpha, 'diff_', 'dod')][0].params * cc_ret_diff['ret'].loc[forecast_period,:])
-        insample_betas[w_end] =models.loc[w_end, (alpha, 'diff_', 'dod')][0].params
-        
-        
-        prediction.loc[forecast_period, (alpha, 'level', 'dod')] = \
-        sum(models.loc[w_end, (alpha, 'level', 'dod')][0].params * cc_ret['ret'].loc[forecast_period,:])
-    
-    #OOS Regression Diff:
-    emp_diff = cc_ret_diff['cftc','net_specs']
-    pred_diff = prediction.loc[:,(alpha, ['diff_'], ['dod'])].astype(float)   
-    results_diff = pd.merge(emp_diff,pred_diff, how='inner', left_index=True, right_index=True).dropna()
-    results_diff.columns = ['cftc', 'forecast']
-            
-    e_diff = results_diff['cftc'] - results_diff['forecast']
-    mspe_diff = (e_diff**2).sum(axis = 0)
-    var_diff = ((results_diff['cftc']-results_diff['cftc'].mean(axis=0))**2).sum(axis = 0)
-    oosR2_diff = 1 - mspe_diff/var_diff            
-    # mod_lvl = smf.ols('cftc ~ forecast',results_diff).fit()
-    # results_diff.plot(kind = 'scatter',x = 'forecast', y = 'cftc')     
-    # fig =  sns.lmplot(x='forecast', y='cftc', data=results_diff)
+            x0 = cr['ret'].loc[w_start:w_end, :].values
+            y0 = cr['cftc'].loc[w_start:w_end, :]
 
-    
-    
-    #OOS Regression level:
-    emp_lvl = cc_ret['cftc','net_specs']
-    pred_lvl = prediction.loc[:,(alpha, ['diff_'], ['dod'])].astype(float)   
-    results_lvl = pd.merge(emp_lvl,pred_lvl, how='inner', left_index=True, right_index=True).dropna()
-    results_lvl.columns = ['cftc', 'forecast']
+        alpha = getAlpha(alpha_type=model.alpha_type, y=y0) * model.alpha
 
-    e_lvl= results_lvl['cftc'] - results_lvl['forecast']
-    mspe_lvl = (e_lvl**2).sum(axis = 0)
-    var_lvl = ((results_lvl['cftc']-results_lvl['cftc'].mean(axis=0))**2).sum(axis = 0)
-    oosR2_lvl = 1 - mspe_lvl/var_lvl 
-    
-    
-    # mod_lvl = smf.ols('cftc ~ forecast',results_lvl).fit()
+        y = np.concatenate((y0, np.zeros((gamma.shape[0], 1))))
+        x = np.concatenate((x0, gamma * alpha), axis=0)
 
-    result = {}
-    result['scores-insample'] = scores
-    result['fcast'] = prediction
-    result['OOSR2'] = pd.DataFrame({'oosR2_diff':oosR2_diff,'oosR2_lvl': oosR2_lvl}, index =[0])
-    result['alpha'] = df_alpha
-    result['insample_betas'] = insample_betas
-    # result['last_betas'] = models.loc[w_end, (alpha, 'diff_', 'dod')][0].params
-    result['gamma'] = gamma
-    return result
+        ##  fit the models
+        model_fit = sm.OLS(y, x).fit()
 
+        beta.qty = model_fit.params
+        beta.px_date = forecast_period
+        fcast['qty'] = model_fit.predict(cr['ret'].loc[forecast_period, :].values)
+        fcast['px_date'] = forecast_period
+        if idx2 == 0:
+            beta_all = beta.copy()
+            fcast_all = fcast.copy()
+        else:
+            beta_all = beta_all.append(beta, ignore_index=True)
+            fcast_all = fcast_all.append(fcast, ignore_index=True)
 
-
-
-
-    
-def calcCFTC(type_of_exposure, bb_tkr,alpha,gammatype = 'dom',maxlag = 250, window = 250,alpha_scale_factor = 1, decay = 0,start_dt ='1900-01-01',end_dt='2019-12-31',series_id=None,bb_ykey='COMDTY', constr=None, adjustment = None,regularization ='d1',naildown= False,naildownvalue =5):
-    """
-    Parameters
-    ----------
-    type_of_exposure : str()
-        one of: 'net_managed_money','net_non_commercials','ratio_mm','ratio_nonc'
-    bb_tkr : str()
-            
-    gammatype : str(), optional
-        The default is 'dom' but can also be one of: 'flat','linear','arctan','log','sqrt'    
-    maxlag : int, optional
-        DESCRIPTION. The default is 250.
-    window : int, optional
-         The default is 250.
-    decay : float, optional
-        The default is 0.
-    alpha : [str()], optional
-        DESCRIPTION. The default is ['stdev'].
-    start_dt : TYPE, optional
-        DESCRIPTION. The default is '1900-01-01'.
-    end_dt : TYPE, optional
-        DESCRIPTION. The default is '2019-12-31'.
-    series_id : TYPE, optional
-        DESCRIPTION. The default is None.
-    bb_ykey : TYPE, optional
-        DESCRIPTION. The default is 'COMDTY'.
-    constr : TYPE, optional
-        DESCRIPTION. The default is None.
-    adjustment : TYPE, optional
-        DESCRIPTION. The default is None.
-
-    Returns
-    -------
-    res1 : TYPE
-        DESCRIPTION.
-
-    """
-    
-    
-    # Get prices:
-    fut = gets(engine1,type = 'px_last',desc_tab= 'fut_desc',data_tab = 'data', bb_tkr = bb_tkr, adjustment = 'by_ratio', start_dt =start_dt,end_dt=end_dt)
-    
-    #calc rets:
-    ret_series = pd.DataFrame(index = fut.index)
-    ret_series.loc[:,'ret'] = np.log(fut/fut.shift(1))
-    ret_series = ret_series.dropna() #deletes first value
-    ret_series.columns = pd.MultiIndex(levels=[['ret'], [str(0).zfill(3)]], codes=[[0],[0]])
-
-    # getPos:
-    pos = getexposure(type_of_exposure,bb_tkr,start_dt =start_dt,end_dt=end_dt,bb_ykey='COMDTY')
-    
-    #get Gamma and Retmat:
-    tupl = getGamma_and_Retmat(ret= ret_series,gammatype = gammatype ,maxlag= maxlag,regularization=regularization,naildown = naildown,naildownvalue = naildownvalue)
-    
-    res1 = calcinsampleReg(getGamma_and_Retmat_obj = tupl, pos = pos, decay = decay,alpha = alpha,alpha_scale_factor=alpha_scale_factor, window = window, maxlag = maxlag)
-    
-    return res1
-
-
-
-# #### Tests:
-# type_of_exposure = 'net_non_commercials'; bb_tkr= 'QS';regularization ='d1'
-# alpha = ['stdev']; gammatype = 'dom';maxlag = 250; window = 250;alpha_scale_factor = 0.000001; decay = 0
-# start_dt ='1900-01-01';end_dt='2019-12-31';series_id=None;bb_ykey='COMDTY'; constr=None; adjustment = None;
-
-
-# fut = gets(engine1,type = 'px_last',desc_tab= 'fut_desc',data_tab = 'data', bb_tkr = bb_tkr, adjustment = 'by_ratio', start_dt =start_dt,end_dt=end_dt)
-
-# # #calc rets:
-# ret_series = pd.DataFrame(index = fut.index)
-# ret_series.loc[:,'ret'] = np.log(fut/fut.shift(1))
-# ret_series = ret_series.dropna() #deletes first value
-# ret_series.columns = pd.MultiIndex(levels=[['ret'], [str(0).zfill(3)]], codes=[[0],[0]])
-
-# # # getPos:
-# pos = getexposure(type_of_exposure,bb_tkr,start_dt =start_dt,end_dt=end_dt,bb_ykey='COMDTY')
-
-# #get Gamma and Retmat:
-# tupl = getGamma_and_Retmat(ret= ret_series,gammatype = gammatype ,maxlag= maxlag,regularization='d1',naildown = True)
-# getGamma_and_Retmat_obj = tupl; pos = pos; decay = decay;alpha = alpha;alpha_scale_factor=alpha_scale_factor; window = window; maxlag = maxlag
-# ret = ret_series
-# gamma = getGamma_and_Retmat_obj[0]
-
-
-# #Gammma Check
-# gamma_d1 = getGamma_and_Retmat(ret= ret_series,gammatype = gammatype ,maxlag= maxlag,regularization='d1',naildown = False)[0]
-# gamma_d1_naildown = getGamma_and_Retmat(ret= ret_series,gammatype = gammatype ,maxlag= maxlag,regularization='d1',naildown = True)[0]
-
-# gamma_d2_adj = getGamma_and_Retmat(ret= ret_series,gammatype = gammatype ,maxlag= maxlag,regularization='d2_adj',naildown = False)[0]
-# gamma_d2_adj_naildown = getGamma_and_Retmat(ret= ret_series,gammatype = gammatype ,maxlag= maxlag,regularization='d2_adj',naildown = True)[0]
-
-
+    print(beta_all)
+    print(fcast_all)
+    beta_all.to_sql('beta', engine1, schema='cftc', if_exists='append', index=False)
+    fcast_all.to_sql('forecast', engine1, schema='cftc', if_exists='append', index=False)
+    print('---')
