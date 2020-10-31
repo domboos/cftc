@@ -15,14 +15,14 @@ engine1 = sq.create_engine("postgresql+psycopg2://grbi@iwa-backtest:grbizhaw@iwa
 
 file = 'C:\\Users\\bood\\switchdrive\\Tracking Traders\\02_Daten\\desc_tables.xlsx'
 
-# pd.read_excel(file, 'fut_desc_none').to_sql('fut_desc', engine1, schema='cftc', if_exists='append', index=False)
+pd.read_excel(file, 'model_desc').to_sql('model_desc', engine1, schema='cftc', if_exists='append', index=False)
 
 file2 = 'C:\\Users\\bood\\switchdrive\\Tracking Traders\\02_Daten\\02_readyforimport\\px_adj_none.xlsx'
 
 #.dropna(axis=0, how='any')
-h= pd.read_excel(file2, 'load', skiprows=1, header=0, index_col=0).stack()\
-    .reset_index().rename(columns={'level_1': "px_id", 0: "qty"})
+#h= pd.read_excel(file2, 'load', skiprows=1, header=0, index_col=0).stack()\
+#    .reset_index().rename(columns={'level_1': "px_id", 0: "qty"})
 
-h.to_sql('data', engine1, schema='cftc', if_exists='append', index=False)
+#h.to_sql('data', engine1, schema='cftc', if_exists='append', index=False)
 
 print(h)
