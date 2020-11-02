@@ -108,7 +108,7 @@ def getexposure(type_of_trader, norm, bb_tkr, start_dt='1900-01-01', end_dt='210
 ####-------------------------Gamma and Returns------------------------------------
 ####------------------------------------------------------------------------------
 
-def getGamma(maxlag, regularization='d1', gammatype='sqrt', gammapara=1, naildownvalue0=1, naildownvalue1=1):
+def getGamma(maxlag, regularization='d1', gammatype='sqrt', gammapara=1, naildownvalue0=0, naildownvalue1=0):
     """
     Parameters
     ----------
@@ -247,8 +247,8 @@ def merge_pos_ret(pos, ret, diff):
 # refreshing model view and fetching
 conn = engine1.connect()
 conn.execute('REFRESH MATERIALIZED VIEW cftc.vw_model_desc')
-model_list = loadedData = pd.read_sql_query("SELECT * FROM cftc.vw_model_desc WHERE max_date IS NULL "
-                                            "ORDER BY bb_tkr, bb_ykey", engine1)
+model_list = pd.read_sql_query("SELECT * FROM cftc.vw_model_desc WHERE max_date IS NULL ORDER BY bb_tkr, bb_ykey",
+                               engine1)
 
 for idx, model in model_list.iterrows():
     # feching and structure returns
@@ -276,19 +276,20 @@ for idx, model in model_list.iterrows():
     # gamma
     gamma = getGamma(maxlag=model.lookback, regularization=model.regularization, gammatype=model.gamma_type,
                      gammapara=model.gamma_para, naildownvalue0=model.naildown_value0,
-                     naildownvalue1=model.naildown_value0)
+                     naildownvalue1=model.naildown_value1)
 
     # fecthing cot, crate lagged returns and merge
     pos = getexposure(type_of_trader=model.cot_type, norm=model.cot_norm, bb_tkr=bb_tkr, bb_ykey=bb_ykey)
     ret = getRetMat(ret_series, model.lookback)
     cr = merge_pos_ret(pos, ret, model.diff)
 
-    for idx2, day in enumerate(cr.index[0:-(window + 2)]):
+    for idx2, day in enumerate(cr.index[0:-(window + 1)]):
 
         # rolling window parameters:
         w_start = cr.index[idx2]
         w_end = cr.index[idx2 + window]
-        forecast_period = cr.index[idx2 + window + 2]  # includes the day x in [:x]
+        # welcher wert????
+        forecast_period = cr.index[idx2 + window + 1]  # includes the day x in [:x]
 
         if model.decay is not None:
             x0 = cr['ret'].loc[w_start:w_end, :].values * retFac
@@ -316,8 +317,6 @@ for idx, model in model_list.iterrows():
             beta_all = beta_all.append(beta, ignore_index=True)
             fcast_all = fcast_all.append(fcast, ignore_index=True)
 
-    print(beta_all)
-    print(fcast_all)
     beta_all.to_sql('beta', engine1, schema='cftc', if_exists='append', index=False)
     fcast_all.to_sql('forecast', engine1, schema='cftc', if_exists='append', index=False)
     print('---')
