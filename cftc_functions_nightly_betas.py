@@ -283,13 +283,13 @@ for idx, model in model_list.iterrows():
     ret = getRetMat(ret_series, model.lookback)
     cr = merge_pos_ret(pos, ret, model.diff)
 
-    for idx2, day in enumerate(cr.index[0:-(window + 1)]):
+    for idx2, day in enumerate(cr.index[0:-(window + model.fit_lag)]):
 
         # rolling window parameters:
         w_start = cr.index[idx2]
         w_end = cr.index[idx2 + window]
         # welcher wert????
-        forecast_period = cr.index[idx2 + window + 1]  # includes the day x in [:x]
+        forecast_period = cr.index[idx2 + window + model.fit_lag]  # includes the day x in [:x]
 
         if model.decay is not None:
             x0 = cr['ret'].loc[w_start:w_end, :].values * retFac
