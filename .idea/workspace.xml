@@ -3,9 +3,7 @@
   <component name="ChangeListManager">
     <list default="true" id="a4a82a83-9fe2-4135-9117-93a2c57ffe46" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Test_calc.py" beforeDir="false" afterPath="$PROJECT_DIR$/Test_calc.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cftc_functions_nightly_betas.py" beforeDir="false" afterPath="$PROJECT_DIR$/cftc_functions_nightly_betas.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/sql_qrys/vw_data" beforeDir="false" afterPath="$PROJECT_DIR$/sql_qrys/vw_data" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cfunctions.py" beforeDir="false" afterPath="$PROJECT_DIR$/cfunctions.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -52,36 +50,38 @@
     <session id="12047157">
       <usages-collector id="statistics.lifecycle.project">
         <counts>
-          <entry key="project.closed" value="1" />
+          <entry key="project.closed" value="2" />
           <entry key="project.open.time.0" value="1" />
           <entry key="project.open.time.3" value="1" />
-          <entry key="project.open.time.4" value="2" />
+          <entry key="project.open.time.4" value="3" />
+          <entry key="project.open.time.7" value="1" />
+          <entry key="project.open.time.8" value="1" />
           <entry key="project.open.time.9" value="2" />
-          <entry key="project.opened" value="6" />
+          <entry key="project.opened" value="9" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.open">
         <counts>
-          <entry key="py" value="15" />
+          <entry key="py" value="16" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.open">
         <counts>
-          <entry key="Python" value="15" />
+          <entry key="Python" value="16" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.edit">
         <counts>
           <entry key="Python Console" value="34" />
           <entry key="dummy" value="83" />
-          <entry key="py" value="203" />
-          <entry key="txt" value="244" />
+          <entry key="py" value="207" />
+          <entry key="txt" value="275" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
-          <entry key="PLAIN_TEXT" value="327" />
-          <entry key="Python" value="237" />
+          <entry key="PLAIN_TEXT" value="358" />
+          <entry key="Python" value="241" />
         </counts>
       </usages-collector>
     </session>
@@ -91,8 +91,11 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/cftc_functions_nightly_betas.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="47">
-              <caret line="130" column="1" selection-start-line="130" selection-start-column="1" selection-end-line="130" selection-end-column="1" />
+            <state relative-caret-position="177">
+              <caret line="241" column="13" lean-forward="true" selection-start-line="241" selection-start-column="13" selection-end-line="241" selection-end-column="13" />
+              <folding>
+                <element signature="e#84#102#0" expanded="true" />
+              </folding>
             </state>
           </provider>
         </entry>
@@ -136,10 +139,10 @@
     </option>
   </component>
   <component name="ProjectFrameBounds" extendedState="6">
-    <option name="x" value="-66" />
-    <option name="y" value="174" />
-    <option name="width" value="2880" />
-    <option name="height" value="1275" />
+    <option name="x" value="-12" />
+    <option name="y" value="-12" />
+    <option name="width" value="1944" />
+    <option name="height" value="1104" />
   </component>
   <component name="ProjectId" id="1R3AbqHTqNMnvQv0ENz8mZwaWji" />
   <component name="ProjectView">
@@ -191,12 +194,12 @@
       <envs>
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
-      <option name="SDK_HOME" value="" />
+      <option name="SDK_HOME" value="C:\Users\grbi\Anaconda3\python.exe" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
-      <option name="IS_MODULE_SDK" value="true" />
+      <option name="IS_MODULE_SDK" value="false" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/rollingReg_out_of_sample.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/cftc_functions_nightly_betas.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -376,7 +379,21 @@
       <option name="project" value="LOCAL" />
       <updated>1603443708419</updated>
     </task>
-    <option name="localTasksCounter" value="23" />
+    <task id="LOCAL-00023" summary="# Weil es sonst nicht tut">
+      <created>1603986796182</created>
+      <option name="number" value="00023" />
+      <option name="presentableId" value="LOCAL-00023" />
+      <option name="project" value="LOCAL" />
+      <updated>1603986796182</updated>
+    </task>
+    <task id="LOCAL-00024" summary="# Weil es sonst nicht tut">
+      <created>1603986824583</created>
+      <option name="number" value="00024" />
+      <option name="presentableId" value="LOCAL-00024" />
+      <option name="project" value="LOCAL" />
+      <updated>1603986824583</updated>
+    </task>
+    <option name="localTasksCounter" value="25" />
     <servers />
   </component>
   <component name="TodoView" selected-index="4">
@@ -392,19 +409,19 @@
     <frame x="-7" y="-7" width="1295" height="695" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.26947537" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.26947537" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" sideWeight="0.49947312" weight="0.329718" />
-      <window_info anchor="bottom" id="Run" order="2" sideWeight="0.49663526" weight="0.53427064" />
+      <window_info anchor="bottom" id="Run" order="2" sideWeight="0.49663526" weight="0.53362256" />
       <window_info anchor="bottom" id="Debug" order="3" weight="0.4" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="bottom" id="TODO" order="6" sideWeight="0.49761525" weight="0.31494662" />
-      <window_info anchor="bottom" id="Version Control" order="7" sideWeight="0.49841017" weight="0.3291815" />
-      <window_info active="true" anchor="bottom" id="Terminal" order="8" sideWeight="0.4944356" visible="true" weight="0.11921708" />
-      <window_info anchor="bottom" id="Event Log" order="9" sideWeight="0.5055644" side_tool="true" visible="true" weight="0.11921708" />
+      <window_info anchor="bottom" id="Version Control" order="7" sideWeight="0.49841017" weight="0.20065077" />
+      <window_info anchor="bottom" id="Terminal" order="8" sideWeight="0.4944356" weight="0.3291815" />
+      <window_info anchor="bottom" id="Event Log" order="9" sideWeight="0.5055644" side_tool="true" weight="0.11921708" />
       <window_info anchor="bottom" id="Python Console" order="10" sideWeight="0.49841017" weight="0.50332224" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
@@ -456,7 +473,9 @@
     <MESSAGE value="anpassung Exposure und Gamma" />
     <MESSAGE value="Leerschlag für Dominik" />
     <MESSAGE value="Leerschlag" />
-    <option name="LAST_COMMIT_MESSAGE" value="Leerschlag" />
+    <MESSAGE value="Merge branch 'master' of https://github.com/domboos/cftc&#10;# Please enter a commit message to explain why this merge is necessary,&#10;# especially if it merges an updated upstream into a topic branch.&#10;#&#10;# Lines starting with '#' will be ignored, and an empty message aborts&#10;# the commit." />
+    <MESSAGE value="# Weil es sonst nicht tut" />
+    <option name="LAST_COMMIT_MESSAGE" value="# Weil es sonst nicht tut" />
   </component>
   <component name="editorHistoryManager">
     <entry file="file://$PROJECT_DIR$/test2.py">
@@ -508,9 +527,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="1343">
           <caret line="86" column="42" selection-start-line="86" selection-start-column="42" selection-end-line="86" selection-end-column="42" />
-          <folding>
-            <element signature="e#83#92#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -539,16 +555,16 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="413">
           <caret line="382" selection-start-line="382" selection-end-line="382" />
-          <folding>
-            <element signature="e#0#19#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/cftc_functions_nightly_betas.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="47">
-          <caret line="130" column="1" selection-start-line="130" selection-start-column="1" selection-end-line="130" selection-end-column="1" />
+        <state relative-caret-position="177">
+          <caret line="241" column="13" lean-forward="true" selection-start-line="241" selection-start-column="13" selection-end-line="241" selection-end-column="13" />
+          <folding>
+            <element signature="e#84#102#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>

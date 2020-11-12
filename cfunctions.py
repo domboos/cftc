@@ -9,6 +9,9 @@ import numpy as np
 import sqlalchemy as sq
 import pandas as pd
 
+engine1 = sq.create_engine(
+    "postgresql+psycopg2://grbi@iwa-backtest:grbizhaw@iwa-backtest.postgres.database.azure.com:5432/postgres")
+
 def gets(engine, type, data_tab='data', desc_tab='cot_desc', series_id=None, bb_tkr=None, bb_ykey='COMDTY',
          start_dt='1900-01-01', end_dt='2100-01-01', constr=None, adjustment=None):
     if constr is None:
