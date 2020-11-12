@@ -6,7 +6,7 @@ Created on Wed Nov  4 02:11:00 2020
 """
 
 import os
-os.chdir('C:\\Users\\grbi\\PycharmProjects\\cftc_neu')
+os.chdir('C:\\Users\\bood\\PycharmProjects\\cftc')
 
 
 import numpy as np
@@ -72,6 +72,8 @@ sns.set_style('white')
 sns.set_style('white', {'font.family':'serif', 'font.serif':'Times New Roman'})
 sns.lineplot(data = temp_betas.T, dashes =False)
 sns.despine()
+
+plt.show()
 
 
 
