@@ -244,7 +244,7 @@ def merge_pos_ret(pos, ret, diff):
 
 # MAIN
 
-model_list = loadedData = pd.read_sql_query("SELECT * FROM cftc.model_desc ORDER BY bb_tkr, bb_ykey", engine1)
+model_list = pd.read_sql_query("SELECT * FROM cftc.model_desc ORDER BY bb_tkr, bb_ykey", engine1)
 
 for idx, model in model_list.iterrows():
     # feching and structure returns
