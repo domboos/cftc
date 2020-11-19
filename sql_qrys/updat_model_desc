@@ -1,0 +1,22 @@
+with H as (select model.model_id, bb.model_type_id from cftc.model_desc model
+left join cftc.model_type_desc bb
+on
+    model.cot_type = bb.cot_type AND
+    model.cot_norm = bb.cot_norm AND
+    model.est_window = bb.est_window AND
+    model.lookback = bb.lookback AND
+    model.diff = bb.diff AND
+    coalesce(model.decay,-1) = coalesce(bb.decay, -1) AND
+    model.gamma_type = bb.gamma_type AND
+    coalesce(model.gamma_para, -999.999) = coalesce(bb.gamma_para, -999.999) AND
+    model.naildown_value0 = bb.naildown_value0 AND
+    model.naildown_value1 = bb.naildown_value1 AND
+    model.regularization = bb.regularization AND
+    model.alpha_type = bb.alpha_type AND
+    model.alpha = bb.alpha AND
+    model.fit_lag = bb.fit_lag)
+
+update cftc.model_desc
+set model_type_id = H.model_type_id
+from H
+where cftc.model_desc.model_id = H.model_id
