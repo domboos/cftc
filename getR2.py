@@ -7,7 +7,7 @@ Created on Thu Nov 12 21:04:13 2020
 
 import matplotlib as plt 
 import os 
-os.chdir('C:\\Users\\grbi\\PycharmProjects\\cftc_neu')
+os.chdir('C:\\Users\\bood\\PycharmProjects\\cftc')
 from cfunctions import *
 
 #----------------- Define which models you'd like to check:------------------------------------
@@ -43,9 +43,10 @@ for idx in model_types.index:
         mspe_diff = (e_diff**2).sum(axis = 0)
         var_diff = ((df_sample['cftc']-df_sample['cftc'].mean(axis=0))**2).sum(axis = 0)
         oosR2_diff = 1 - mspe_diff/var_diff
-        df_result.loc[int(temp.loc['model_type_id']),ongoingQuery.loc[i,'bb_tkr']] = oosR2_diff
-    
-    
+        df_result.loc[int(temp.loc['model_type_id']), ongoingQuery.loc[i,'bb_tkr']] = oosR2_diff
+
+df_result.to_excel('C:\\Users\\bood\\switchdrive\\Tracking Traders\\02_Daten\\R2.xlsx')
+
     
     # cot_type = model_types.loc[idx,'cot_type']  # or net_non_commercials
     # cot_norm = model_types.loc[idx,'cot_norm']
