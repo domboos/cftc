@@ -44,7 +44,7 @@ def getYearEndDates(betas_stacked):
 model_list = pd.read_sql_query("SELECT * FROM cftc.vw_model_desc ORDER BY bb_tkr, bb_ykey", engine1)
 
 #TODO: Define model_id for the plot
-model_id = 1055
+model_id = 1050
 
 #Get Data and transform DataTypes (easier handling later on)
 betas_stacked = pd.read_sql_query(str("SELECT px_date,return_lag,qty FROM cftc.beta where model_id = " + str(model_id)),engine1)

@@ -179,8 +179,8 @@ def getGamma(maxlag, regularization='d1', gammatype='sqrt', gammapara=1, naildow
         gamma[rowsm1, colsm1] = gamma.diagonal()[:-2]
 
         # fade out:
-        gamma[maxlag - 1, maxlag - 1] = naildownvalue1
-        gamma[maxlag - 1, maxlag] = -naildownvalue1
+        gamma[maxlag - 2, maxlag - 2] = naildownvalue1
+        gamma[maxlag - 2, maxlag-1] = -naildownvalue1
 
     # nail_down and delete zero rows
     gamma[gamma.shape[0] - 1, gamma.shape[1] - 1] = naildownvalue0
@@ -275,6 +275,9 @@ conn = engine1.connect()
 conn.execute('REFRESH MATERIALIZED VIEW cftc.vw_model_desc')
 model_list = pd.read_sql_query("SELECT * FROM cftc.vw_model_desc WHERE max_date IS NULL ORDER BY bb_tkr, bb_ykey",
                                engine1)
+conn.close()
+
+print(model_list.to_string())
 
 for idx, model in model_list.iterrows():
     # feching and structure returns
@@ -321,6 +324,7 @@ for idx, model in model_list.iterrows():
         if model.decay is not None:
             x0 = cr['ret'].loc[w_start:w_end, :].values * retFac
             y0 = cr['cftc'].loc[w_start:w_end, :] * retFac[:, 1] # not tested
+            print('applying decay')
         else:
             x0 = cr['ret'].loc[w_start:w_end, :].values
             y0 = cr['cftc'].loc[w_start:w_end, :]
@@ -328,8 +332,10 @@ for idx, model in model_list.iterrows():
         try:
             alpha = getAlpha(alpha_type=model.alpha_type, y=y0, x=x0, gma=gamma, start=alpha) * model.alpha
         except:
-            print(alpha)
-            print(forecast_period)
+            print(y0)
+            print(x0)
+            print(gamma)
+            print(model.lookback)
 
         y = np.concatenate((y0, np.zeros((gamma.shape[0], 1))))
         x = np.concatenate((x0, gamma * alpha), axis=0)
