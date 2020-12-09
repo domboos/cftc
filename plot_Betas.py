@@ -48,6 +48,7 @@ model_id = 764 # FC
 model_id = 963 # FC 
 model_id = 202 # PL
 model_id = 733 # PL
+model_id = 1050
 
 #Get Data and transform DataTypes (easier handling later on)
 betas_stacked = pd.read_sql_query(str("SELECT px_date,return_lag,qty FROM cftc.beta where model_id = " + str(model_id)),engine1)

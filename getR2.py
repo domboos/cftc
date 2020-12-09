@@ -11,7 +11,7 @@ import matplotlib as plt
 import statsmodels.api as sm
 
 import os 
-os.chdir('C:\\Users\\grbi\\PycharmProjects\\cftc_neu')
+os.chdir('C:\\Users\\bood\\PycharmProjects\\cftc')
 from cfunctions import *
 #%%
 #----------------- Define which models you'd like to check:------------------------------------
@@ -70,3 +70,6 @@ for idx in model_types.index:
             df_direction.loc[int(temp.loc['model_type_id']),ongoingQuery.loc[i,'bb_tkr']] = df_sample[df_sample.cftc_forecast == df_sample.cftc_binary].cftc.count() / df_sample.shape[0]
         except:
             print('something went wrong')
+        df_result.loc[int(temp.loc['model_type_id']), ongoingQuery.loc[i,'bb_tkr']] = oosR2_diff
+
+df_result.to_excel('U:\\R2.xlsx')
