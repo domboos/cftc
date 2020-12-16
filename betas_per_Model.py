@@ -43,16 +43,17 @@ def createFigurePerModel(model_type,betas_all,dates,savefig = False):
     color = ['crimson', 'cyan'] # https://matplotlib.org/3.1.0/gallery/color/named_colors.html
     #def Layout
     fig, axs = plt.subplots(8, 3, sharex=False, sharey= False ,figsize=(15,20))
-    fig.tight_layout()
-    fig.suptitle(f"All Betas with model_id: {model_type}",fontsize=30)
-
-    fig.text(0.5, 0.00, 'Return Lag', ha='center', fontsize = 20)
-    fig.text(0.00, 0.5, 'Beta', va='center', rotation='vertical', fontsize = 20)
-
+    fig.tight_layout() # for nicer layout
+    fig.subplots_adjust(top=0.95)
 
     sns.set(font_scale = 1.2)
     sns.set_style('white')
     sns.set_style('white', {'font.family':'serif', 'font.serif':'Times New Roman'})
+
+    fig.suptitle(f"All Betas with model_id: {model_type}",fontsize=30)
+
+    fig.text(0.5, 0.00, 'Return Lag', ha='center', fontsize = 20)
+    fig.text(0.00, 0.5, 'Beta', va='center', rotation='vertical', fontsize = 20)
 
 
     plot_matrix = np.arange(24).reshape(8, -1)
@@ -72,7 +73,7 @@ def createFigurePerModel(model_type,betas_all,dates,savefig = False):
             k =0
             for date in dates:
                 beta = getBetas2(model_id,betas_all,date)
-                sns.lineplot(x = beta.return_lag,y = beta.qty ,ax =ax_curr, linewidth = 5, legend = False,color =color[k])
+                sns.lineplot(x = beta.return_lag,y = beta.qty ,ax =ax_curr, linewidth = 4, legend = False,color =color[k])
                 k= k+1
                 # plt.xticks([])
                 # plt.yticks([])
@@ -104,21 +105,26 @@ def createFigurePerModel(model_type,betas_all,dates,savefig = False):
 # betas_all,models = getSpecificData(dates,model_type= model_type)
 
 #%% main()
-    engine1 = sq.create_engine("postgresql+psycopg2://grbi@iwa-backtest:grbizhaw@iwa-backtest.postgres.database.azure.com:5432/postgres")
-    #define Dates
-    dates = ['2015-12-29','2019-12-31']
+engine1 = sq.create_engine("postgresql+psycopg2://grbi@iwa-backtest:grbizhaw@iwa-backtest.postgres.database.azure.com:5432/postgres")
+#* define Variables
+dates = ['2015-12-29','2019-12-31']
+safefig = True
 
-    df_model_type_id  = pd.read_sql_query("SELECT * FROM cftc.model_type_desc order by model_type_desc", engine1)
+df_model_type_id  = pd.read_sql_query("SELECT * FROM cftc.model_type_desc order by model_type_desc", engine1)
+
 
 
 #%%
     df_model_type_id = df_model_type_id[df_model_type_id.alpha_type.isin(['gcv','loocv'])]
 
-    for model_type in df_model_type_id.model_type_id[0:1]:
+    for model_type in df_model_type_id.model_type_id:
         print(model_type)
         try:
             betas_all,models = getSpecificData(dates,model_type)
-            createFigurePerModel(model_type,betas_all,dates,savefig=False)
+            createFigurePerModel(model_type,betas_all,dates,savefig=True)
         except:
             print(f"Error at: {model_type}")
 
+
+
+# %%
