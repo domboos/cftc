@@ -121,6 +121,3 @@ for model_type in df_model_type_id.model_type_id[0:1]:
     except:
         print(f"Error at: {model_type}")
 
-
-
-# %%
