@@ -9,6 +9,7 @@ import numpy as np
 import sqlalchemy as sq
 import statsmodels.api as sm
 from datetime import datetime
+from scipy.optimize import minimize
 
 from pandas.io.sql import SQLTable
 
@@ -136,6 +137,12 @@ def getGamma(maxlag, regularization='d1', gammatype='sqrt', gammapara=1, naildow
     if regularization == 'd2':
         t -= 1
 
+    if gammatype == 'loo':
+        gammatype_tmp = 'loo'
+        gammatype = 'flat'
+    else:
+        gammatype_tmp = 'xxx'
+
     # loop creates gamma
     for i in range(0, t):
 
@@ -144,6 +151,10 @@ def getGamma(maxlag, regularization='d1', gammatype='sqrt', gammapara=1, naildow
 
         elif gammatype == 'flat':
             gamma[i, i] = 1
+
+        elif gammatype == 'flat1':
+            if i>0:
+                gamma[i, i] = 1
 
         elif gammatype == 'linear1':
             if i>0:
@@ -178,21 +189,24 @@ def getGamma(maxlag, regularization='d1', gammatype='sqrt', gammapara=1, naildow
         gamma[rowsm1, colsm1] = gamma.diagonal()[:-2]
 
         # fade out:
-        gamma[maxlag - 1, maxlag - 1] = naildownvalue1
-        gamma[maxlag - 1, maxlag] = -naildownvalue1
+        gamma[maxlag - 2, maxlag - 2] = naildownvalue1
+        gamma[maxlag - 2, maxlag-1] = -naildownvalue1
 
     # nail_down and delete zero rows
     gamma[gamma.shape[0] - 1, gamma.shape[1] - 1] = naildownvalue0
     gamma = np.delete(gamma, np.where(~gamma.any(axis=1))[0], axis=0)
 
+    if gammatype_tmp == 'loo':
+        gamma = np.delete(gamma, gammapara-1, 0)
+
     return gamma
 
 
-def getRetMat(ret, maxlag):
+def getRetMat(_ret, maxlag):
     """
     Parameters
     ----------
-    ret : pd.DataFrame()
+    ret_ : pd.DataFrame()
         log return series
     maxlag : int
         DESCRIPTION.
@@ -201,13 +215,35 @@ def getRetMat(ret, maxlag):
 
     # loop creates lagged returns in ret
     for i in range(0, maxlag):
-        ret['ret', str(i + 1).zfill(3)] = ret['ret', '000'].shift(i + 1)
+        _ret['ret', str(i + 1).zfill(3)] = _ret['ret', '000'].shift(i + 1)
 
-    ret = ret.iloc[maxlag:, :]  # delete the rows with nan due to its shift.
-    return ret
+    _ret = _ret.iloc[maxlag:, :maxlag+1]  # delete the rows with nan due to its shift.
+    return _ret
 
 
-def getAlpha(alpha_type, y):
+def gcv(a, y, x, g):
+    n = np.shape(y)[0]
+    iH = np.identity(n) - x @ np.linalg.inv(np.transpose(x) @ x + n * a * np.transpose(g) @ g) @ np.transpose(x)
+    iHy = iH @ y
+    tiH = np.trace(iH)
+    return 0.0001 * np.transpose(iHy) @ iHy / (tiH * tiH)
+
+def press(a, y, x, g):
+    n = np.shape(y)[0]
+    iH = np.identity(n) - x @ np.linalg.inv(np.transpose(x) @ x + n * a * np.transpose(g) @ g) @ np.transpose(x)
+    B = np.diag(1 / np.diag(iH))
+    BiHy = B @ iH @ y
+    return 0.0001 * np.transpose(BiHy) @ BiHy / n
+
+def press_(a, y, x, g):
+    n = np.shape(y)[0]
+    iH = np.identity(n) - x @ np.linalg.inv(np.transpose(x) @ x + n * a * a * np.transpose(g) @ g) @ np.transpose(x)
+    B = np.diag(1 / np.diag(iH))
+    BiHy = B @ iH @ y
+    return 0.0001 * np.transpose(BiHy) @ BiHy / n
+
+
+def getAlpha(alpha_type, y, x=None, gma=None, start=None):
     """
     Parameters
     ----------
@@ -224,12 +260,26 @@ def getAlpha(alpha_type, y):
     """
     if alpha_type == 'std':
         alpha = y.std()[0]
-
     elif alpha_type == 'var':
         alpha = y.var()[0]
-
+    elif alpha_type == 'loocv':
+        press1 = lambda z, z1=y.values, z2=x, z3=gma: press(z, z1, z2, z3)
+        res = minimize(press1, x0=start, method='Nelder-Mead',
+                       options={'disp': True, 'maxiter': 500, 'xatol': 0.01, 'fatol': 0.1})
+        alpha = res.x
+    elif alpha_type == 'loocv2':
+        press1 = lambda z, z1=y.values, z2=x, z3=gma: press_(z, z1, z2, z3)
+        res = minimize(press1, x0=start, method='Nelder-Mead',
+                       options={'disp': True, 'maxiter': 500, 'xatol': 0.01, 'fatol': 0.1})
+        alpha = res.x
+    elif alpha_type == 'gcv':
+        gcv1 = lambda z, z1=y.values, z2=x, z3=gma: gcv(z, z1, z2, z3)
+        res = minimize(gcv1, x0=start, method='Nelder-Mead',
+                       options={'disp': True, 'maxiter': 500, 'xatol': 0.01, 'fatol': 0.1})
+        alpha = res.x
     else:
         alpha = 1
+    print(alpha)
 
     return alpha
 
@@ -245,10 +295,14 @@ def merge_pos_ret(pos, ret, diff):
 # MAIN
 
 # refreshing model view and fetching
+alpha = 100
 conn = engine1.connect()
 conn.execute('REFRESH MATERIALIZED VIEW cftc.vw_model_desc')
 model_list = pd.read_sql_query("SELECT * FROM cftc.vw_model_desc WHERE max_date IS NULL ORDER BY bb_tkr, bb_ykey",
                                engine1)
+conn.close()
+
+print(model_list.to_string())
 
 for idx, model in model_list.iterrows():
     # feching and structure returns
@@ -270,6 +324,7 @@ for idx, model in model_list.iterrows():
     beta['return_lag'] = lags
     beta['model_id'] = model.model_id
     fcast = pd.DataFrame(data=[model.model_id], columns={'model_id'})
+    alpha_df = pd.DataFrame(data=[model.model_id], columns={'model_id'})
     if model.decay is not None:
         retFac = np.fromfunction(lambda i, j: model.decay ** i, [window, model.lookback])[::-1]
 
@@ -294,11 +349,19 @@ for idx, model in model_list.iterrows():
         if model.decay is not None:
             x0 = cr['ret'].loc[w_start:w_end, :].values * retFac
             y0 = cr['cftc'].loc[w_start:w_end, :] * retFac[:, 1] # not tested
+            print('applying decay')
         else:
             x0 = cr['ret'].loc[w_start:w_end, :].values
             y0 = cr['cftc'].loc[w_start:w_end, :]
 
-        alpha = getAlpha(alpha_type=model.alpha_type, y=y0) * model.alpha
+        try:
+            alpha = getAlpha(alpha_type=model.alpha_type, y=y0, x=x0, gma=gamma, start=alpha) * model.alpha
+        except:
+            print(y0)
+            print(x0.shape)
+            print(gamma.shape)
+            print(model.lookback)
+            alpha = getAlpha(alpha_type=model.alpha_type, y=y0, x=x0, gma=gamma, start=alpha) * model.alpha
 
         y = np.concatenate((y0, np.zeros((gamma.shape[0], 1))))
         x = np.concatenate((x0, gamma * alpha), axis=0)
@@ -310,13 +373,20 @@ for idx, model in model_list.iterrows():
         beta.px_date = forecast_period
         fcast['qty'] = model_fit.predict(cr['ret'].loc[forecast_period, :].values)
         fcast['px_date'] = forecast_period
+        alpha_df['qty'] = alpha
+        alpha_df['px_date'] = forecast_period
         if idx2 == 0:
             beta_all = beta.copy()
             fcast_all = fcast.copy()
+            alpha_all = alpha_df.copy()
         else:
             beta_all = beta_all.append(beta, ignore_index=True)
             fcast_all = fcast_all.append(fcast, ignore_index=True)
+            alpha_all = alpha_all.append(alpha_df, ignore_index=True)
+        del x0, y0, x, y
 
     beta_all.to_sql('beta', engine1, schema='cftc', if_exists='append', index=False)
     fcast_all.to_sql('forecast', engine1, schema='cftc', if_exists='append', index=False)
+    alpha_all.to_sql('alpha', engine1, schema='cftc', if_exists='append', index=False)
+    del gamma, cr, ret, pos
     print('---')
