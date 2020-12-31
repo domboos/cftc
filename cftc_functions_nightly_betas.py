@@ -221,26 +221,20 @@ def getRetMat(_ret, maxlag):
     return _ret
 
 
-def gcv(a, y, x, g):
-    n = np.shape(y)[0]
-    iH = np.identity(n) - x @ np.linalg.inv(np.transpose(x) @ x + n * a * np.transpose(g) @ g) @ np.transpose(x)
-    iHy = iH @ y
+def gcv(a, _y, _x, g):
+    n = np.shape(_y)[0]
+    iH = np.identity(n) - _x @ np.linalg.inv(np.transpose(_x) @ _x + a * a * np.transpose(g) @ g) @ np.transpose(_x)
+    iHy = iH @ _y
     tiH = np.trace(iH)
-    return 0.0001 * np.transpose(iHy) @ iHy / (tiH * tiH)
+    return 0.000001 * np.transpose(iHy) @ iHy / (tiH * tiH)
 
-def press(a, y, x, g):
-    n = np.shape(y)[0]
-    iH = np.identity(n) - x @ np.linalg.inv(np.transpose(x) @ x + n * a * np.transpose(g) @ g) @ np.transpose(x)
-    B = np.diag(1 / np.diag(iH))
-    BiHy = B @ iH @ y
-    return 0.0001 * np.transpose(BiHy) @ BiHy / n
 
-def press_(a, y, x, g):
-    n = np.shape(y)[0]
-    iH = np.identity(n) - x @ np.linalg.inv(np.transpose(x) @ x + n * a * a * np.transpose(g) @ g) @ np.transpose(x)
+def press(a, _y, _x, g):
+    n = np.shape(_y)[0]
+    iH = np.identity(n) - _x @ np.linalg.inv(np.transpose(_x) @ _x + a * a * np.transpose(g) @ g) @ np.transpose(_x)
     B = np.diag(1 / np.diag(iH))
-    BiHy = B @ iH @ y
-    return 0.0001 * np.transpose(BiHy) @ BiHy / n
+    BiHy = B @ iH @ _y
+    return 0.000001 * np.transpose(BiHy) @ BiHy / n
 
 
 def getAlpha(alpha_type, y, x=None, gma=None, start=None):
@@ -258,24 +252,20 @@ def getAlpha(alpha_type, y, x=None, gma=None, start=None):
         scaling factor for gamma matrix
 
     """
+    bnds = [(1, None)]
     if alpha_type == 'std':
         alpha = y.std()[0]
     elif alpha_type == 'var':
         alpha = y.var()[0]
     elif alpha_type == 'loocv':
         press1 = lambda z, z1=y.values, z2=x, z3=gma: press(z, z1, z2, z3)
-        res = minimize(press1, x0=start, method='Nelder-Mead',
-                       options={'disp': True, 'maxiter': 500, 'xatol': 0.01, 'fatol': 0.1})
-        alpha = res.x
-    elif alpha_type == 'loocv2':
-        press1 = lambda z, z1=y.values, z2=x, z3=gma: press_(z, z1, z2, z3)
-        res = minimize(press1, x0=start, method='Nelder-Mead',
-                       options={'disp': True, 'maxiter': 500, 'xatol': 0.01, 'fatol': 0.1})
+        res = minimize(press1, x0=start, bounds=bnds, method='Nelder-Mead', options={'disp': True,
+                        'maxiter': 500, 'xatol': 0.01, 'fatol': 0.1})
         alpha = res.x
     elif alpha_type == 'gcv':
         gcv1 = lambda z, z1=y.values, z2=x, z3=gma: gcv(z, z1, z2, z3)
-        res = minimize(gcv1, x0=start, method='Nelder-Mead',
-                       options={'disp': True, 'maxiter': 500, 'xatol': 0.01, 'fatol': 0.1})
+        res = minimize(gcv1, x0=start, bounds=bnds, method='Nelder-Mead', options={'disp': True,
+                        'maxiter': 500, 'xatol': 0.01, 'fatol': 0.1})
         alpha = res.x
     else:
         alpha = 1

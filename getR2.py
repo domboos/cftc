@@ -72,4 +72,4 @@ for idx in model_types.index:
             print('something went wrong')
         df_result.loc[int(temp.loc['model_type_id']), ongoingQuery.loc[i,'bb_tkr']] = oosR2_diff
 
-df_result.to_excel('U:\\R2.xlsx')
+df_result.to_excel('C:\\Users\\bood\\switchdrive\\Tracking Traders\\R2.xlsx')
