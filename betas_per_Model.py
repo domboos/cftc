@@ -8,6 +8,8 @@ import matplotlib.pyplot as plt
 import sqlalchemy as sq
 import seaborn as sns
 from datetime import datetime
+from cfunctions import engine1
+from matplotlib.ticker import FormatStrFormatter
 
 #TODO if you work in vsc, ctrl+shift+P --> rebuild and open in container Else Adjust Path in Safe Fig code Section
 #TODO: Adjust Y-Axis in Plots (task for Mr. Boos)
@@ -36,27 +38,25 @@ def getBetas2(model_id,betas_all, date):
     beta = betas_all[(betas_all.model_id == model_id) & (betas_all.px_date.isin(date))]
     return beta[['return_lag','qty']]
 
-def createFigurePerModel(model_type,betas_all,dates,savefig = False,pathSaveFig = "/home/jovyan/work/reports/figures/Betas/"):
+def createFigurePerModelwithDates(model_type,dates,savefig = False,pathSaveFig = "/home/jovyan/work/reports/figures/Betas/"):
     
-    model_ids= list(betas_all.groupby('model_id').ranking.min().sort_values(ascending = True).index)
-    color = ['crimson', 'cyan'] # https://matplotlib.org/3.1.0/gallery/color/named_colors.html
+    betas_all,models = getSpecificData(dates=dates,model_type = model_type)
+    model_ids= list(models.model_id)
+    color = ['crimson', 'cyan','blue','green','grey','black'] # https://matplotlib.org/3.1.0/gallery/color/named_colors.html
     #def Layout
     fig, axs = plt.subplots(8, 3, sharex=False, sharey= False ,figsize=(15,20))
     fig.tight_layout()
-    fig.suptitle(f"All Betas with model_id: {model_type}",fontsize=30)
-    fig.subplots_adjust(top=0.95)
+    # fig.suptitle(f"All Betas with model_id: {model_type}",fontsize=30)
+    # fig.subplots_adjust(top=0.95)
     
     sns.set(font_scale = 1.2)
     sns.set_style('white')
     sns.set_style('white', {'font.family':'serif', 'font.serif':'Times New Roman'})
 
-    fig.suptitle(f"All Betas with model_id: {model_type}",fontsize=30)
+    # fig.suptitle(f"All Betas with model_id: {model_type}",fontsize=30)
 
-    fig.text(0.5, 0.00, 'Return Lag', ha='center', fontsize = 20)
-    fig.text(0.00, 0.5, 'Beta', va='center', rotation='vertical', fontsize = 20)
-
-
-    
+    # fig.text(0.5, 0.00, 'Return Lag', ha='center', fontsize = 20)
+    # fig.text(0.00, 0.5, 'Beta', va='center', rotation='vertical', fontsize = 20)
 
     plot_matrix = np.arange(24).reshape(8, -1)
     for col in range(len(plot_matrix[0])):
@@ -72,8 +72,8 @@ def createFigurePerModel(model_type,betas_all,dates,savefig = False,pathSaveFig 
             
             k =0
             for date in dates:
-                beta = getBetas2(model_id,betas_all,date)
-                sns.lineplot(x = beta.return_lag,y = beta.qty ,ax =ax_curr, linewidth = 5, legend = False,color =color[k])
+                beta = getBetas2(model_id,betas_all,[date])
+                sns.lineplot(x = beta.return_lag,y = beta.qty ,ax =ax_curr, linewidth = 3, legend = False,color =color[k])
                 k= k+1
                 # plt.xticks([])
                 # plt.yticks([])
@@ -81,20 +81,21 @@ def createFigurePerModel(model_type,betas_all,dates,savefig = False,pathSaveFig 
             ax_curr.set_ylabel('')
             
             title = str(models[models.model_id == model_id].bb_tkr.values)[2:-2]
-            ax_curr.set_title(title)
+            title1 = pd.read_sql_query(f"SELECT name FROM cftc.order_of_things where bb_tkr = '{title}'",engine1).name.values[0]
+            ax_curr.set_title(title1)
 
     fig.delaxes(axs[7,2])
     # plt.gca().axes.get_yaxis().set_visible(False)
     
     
     # handles, labels = ax.get_legend_handles_labels()
-    fig.legend(labels=dates, bbox_to_anchor=(0.9, 0.15),fontsize = 20,frameon = False)
+    fig.legend(labels=dates, bbox_to_anchor=(0.9, 0.12),fontsize = 20,frameon = False)
     if savefig == True:
-        plt.savefig(f"{pathSaveFig}/{model_type}.png",dpi=100) #'./reports/figures/'+
+        plt.savefig(f"{pathSaveFig}/Betas_for_Model_{model_type}_to_decide.png",dpi=100) #'./reports/figures/'+
     
     plt.show()
 
-def compare2Models(model_typeNonc,model_typeMM,dates,savefig = False,pathSaveFig = "/home/jovyan/work/reports/figures/Betas/"):
+def compare2Models(model_typeMM,model_typeNonc,labels,dates,savefig = False,pathSaveFig = "/home/jovyan/work/reports/figures/Betas/"):
     """
     Parameters:
     -----------
@@ -119,16 +120,16 @@ def compare2Models(model_typeNonc,model_typeMM,dates,savefig = False,pathSaveFig
     color = ['crimson', 'cyan'] # https://matplotlib.org/3.1.0/gallery/color/named_colors.html
     fig, axs = plt.subplots(8, 3, sharex=False, sharey= False ,figsize=(15,20))
     fig.tight_layout()
-    fig.suptitle(f"All Betas with model_id: {model_typeNonc},{model_typeMM}",fontsize=30)
-    fig.subplots_adjust(top=0.95)
+    # fig.suptitle(f"All Betas with model_id: {model_typeNonc},{model_typeMM}",fontsize=30)
+    # fig.subplots_adjust(top=0.95)
     
     sns.set(font_scale = 1.2)
     sns.set_style('white')
     sns.set_style('white', {'font.family':'serif', 'font.serif':'Times New Roman'})
 
 
-    fig.text(0.5, 0.00, 'Return Lag', ha='center', fontsize = 20)
-    fig.text(0.00, 0.5, 'Beta', va='center', rotation='vertical', fontsize = 20)
+    # fig.text(0.5, 0.00, 'Return Lag', ha='center', fontsize = 20)
+    # fig.text(0.00, 0.5, 'Beta', va='center', rotation='vertical', fontsize = 20)
 
     # DO Plots:
     plot_matrix = np.arange(24).reshape(8, -1)
@@ -147,9 +148,12 @@ def compare2Models(model_typeNonc,model_typeMM,dates,savefig = False,pathSaveFig
             betaMM = getBetas2(model_id_mm,betas_MM,dates)
             sns.lineplot(x = betaMM.return_lag,y = betaMM.qty ,ax =ax_curr, linewidth = 3, legend = False,color ='crimson')
             sns.lineplot(x = betaNonC.return_lag,y = betaNonC.qty ,ax =ax_curr, linewidth = 3, legend = False,color ='cyan')
-        
+            ax_curr.axhline(0, ls='--', color ='black')
+            # ax_curr.yaxis.set_major_formatter(FormatStrFormatter('%e'))
             title = str(models_NonC[models_NonC.model_id == model_id_nonc].bb_tkr.values)[2:-2]
-            ax_curr.set_title(title)
+            title1 = title1 = pd.read_sql_query(f"SELECT name FROM cftc.order_of_things where bb_tkr = '{title}'",engine1).name.values[0]
+            print(title1)
+            ax_curr.set_title(title1)
 
             ax_curr.set_xlabel('')
             ax_curr.set_ylabel('')
@@ -160,31 +164,27 @@ def compare2Models(model_typeNonc,model_typeMM,dates,savefig = False,pathSaveFig
     # plt.gca().axes.get_yaxis().set_visible(False)
     
     
-    # handles, labels = ax.get_legend_handles_labels()
-    fig.legend(labels=['NonCommercals_Arctan','NonCommercials_flat'], bbox_to_anchor=(0.98, 0.12),fontsize = 20,frameon = False)
+    # handles, labels = ax.get_legend_handles_labels() #first model is MM , second is NONC
+    fig.legend(labels=labels, bbox_to_anchor=(0.98, 0.12),fontsize = 20,frameon = False)
     if savefig == True:
-        plt.savefig(f"{pathSaveFig}/{model_typeNonc}-{model_typeMM}.png",dpi=100) #'./reports/figures/'+
+        plt.savefig(f"{pathSaveFig}/Beta_comparison_{model_typeNonc}-{model_typeMM}.png",dpi=100) #'./reports/figures/'+
     
     plt.show()
 
 
 
 
-#%%sample data
-# engine1 = sq.create_engine("postgresql+psycopg2://grbi@iwa-backtest:grbizhaw@iwa-backtest.postgres.database.azure.com:5432/postgres")
-# #define Dates
+#%% #* Create Plot with Dates per Model ID
 # dates = ['2015-12-29','2019-12-31']
-# model_type =77
-# pathSaveFig = "/home/jovyan/work/reports/figures/Betas/"
+dates = ['2002-12-31','2006-12-26','2010-12-28','2014-12-30','2018-12-25']
+pathSaveFig = "reports/figures/Betas/"
+for model_type in [82,76,95,100]:
+    try:
+        createFigurePerModelwithDates(model_type= model_type,dates= dates,savefig = True,pathSaveFig =pathSaveFig )
+    except:
+        continue
 
-# df_model_type_id  = pd.read_sql_query("SELECT * FROM cftc.model_type_desc order by model_type_desc", engine1)
-
-# df_model_type_id = df_model_type_id[df_model_type_id.alpha_type.isin(['gcv','loocv'])]
-# lst_model_types = list(df_model_type_id.model_type_id)
-# betas_all,models = getSpecificData(dates,model_type= model_type)
-# createFigurePerModel(model_type,betas_all,dates,savefig=False,pathSaveFig= pathSaveFig)
-
-#%%
+#%% #* Model Comparison: 100 - 95 // 82 - 76 // 100-82 // 95 -76
 engine1 = sq.create_engine("postgresql+psycopg2://grbi@iwa-backtest:grbizhaw@iwa-backtest.postgres.database.azure.com:5432/postgres")
 #define Dates
 
@@ -195,49 +195,19 @@ engine1 = sq.create_engine("postgresql+psycopg2://grbi@iwa-backtest:grbizhaw@iwa
 dates = ['2019-12-31']
 
 pathSaveFig = "/home/jovyan/work/reports/figures/Betas/"
-model_typeNonc = 76 #*model1 
-model_typeMM = 77 #*Model2
-#TODO: adjust titles
-compare2Models(model_typeNonc,model_typeMM,dates,savefig = True,pathSaveFig = "reports//figures//Betas//")
+model_typeMM = 100 #*Model2
+model_typeNonc = 95  #*model1 
 
+compare2Models(model_typeMM=model_typeMM,model_typeNonc=model_typeNonc ,labels= ['MM-square root','MM-flat'],dates=dates,savefig = True,pathSaveFig = "reports//figures//Betas//")
 
-#%%
+model_typeMM = 82 #*Model2
+model_typeNonc = 76  #*model1 
+compare2Models(model_typeMM=model_typeMM,model_typeNonc=model_typeNonc ,labels= ['NonC-square root','NonC-flat'],dates=dates,savefig = True,pathSaveFig = "reports//figures//Betas//")
+#%%%
+model_typeMM = 95 #*Model2
+model_typeNonc = 76  #*model1 
+compare2Models(model_typeMM=model_typeMM,model_typeNonc=model_typeNonc ,labels= ['NonC-square root','MM-flat'],dates=dates,savefig = True,pathSaveFig = "reports//figures//Betas//")
 
-
-#%% main()
-if __name__ == '__main__':
-    engine1 = sq.create_engine("postgresql+psycopg2://grbi@iwa-backtest:grbizhaw@iwa-backtest.postgres.database.azure.com:5432/postgres")
-    #* define Variables:
-    dates = ['2015-12-29','2019-12-31']
-    saveFigures = True
-    pathSaveFig = "/home/jovyan/work/reports/figures/Betas/"
-    df_model_type_id  = pd.read_sql_query("SELECT * FROM cftc.model_type_desc order by model_type_desc", engine1)
-
-
-    df_model_type_id = df_model_type_id[df_model_type_id.alpha_type.isin(['gcv','loocv'])]
-
-    for model_type in df_model_type_id.model_type_id:
-        print(model_type)
-        try:
-            betas_all,models = getSpecificData(dates,model_type)
-            createFigurePerModel(model_type,betas_all,dates,savefig=saveFigures,pathSaveFig= pathSaveFig)
-        except:
-            print(f"Error at: {model_type}")
-
-
-# %%
-betas_NonC, models_NonC = getSpecificData(dates,model_typeNonc)
-# %%
-print(models_NonC.columns)
-
-print(models_NonC[['model_id','bb_tkr']])
-
-# models_NonC[models_NonC.model_id == 1040].head()
-# %%
-
-
-print(models_NonC[models_NonC.model_id == 1903].bb_tkr.values[0])
-
-# %%
-
-models_N
+model_typeMM = 100 #*Model2
+model_typeNonc = 82  #*model1 
+compare2Models(model_typeMM=model_typeMM,model_typeNonc=model_typeNonc ,labels= ['MM-square root','NonC-square root'],dates=dates,savefig = True,pathSaveFig = "reports//figures//Betas//")
