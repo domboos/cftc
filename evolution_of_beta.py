@@ -48,6 +48,12 @@ def getEvolutionofBetaPeak(betas_per_model):
 
 #*do plots: 
 def getPlots(model_type_id,showme):
+    """[Plots for one model Betas, and alpha]
+
+    Args:
+        model_type_id ([int]): defines for which model_type the plots will be generated 
+        showme ([str()]): defines what will be plottet: args can be one of: ['EvolutionOfBetaPeak','ExposureAndOI','RatioExposureOI','weighted_beta','alpha']
+    """
 
     models = pd.read_sql_query(f"SELECT * from cftc.model_desc where model_type_id = {model_type_id}",engine1)
     bb_tkrs = list(pd.read_sql_query(f"SELECT  bb_tkr from cftc.order_of_things order by ranking asc",engine1).bb_tkr)
@@ -118,9 +124,15 @@ def getPlots(model_type_id,showme):
                 ax_curr.axhline(0, ls='--', color ='black')
                 
             elif showme == 'weighted_beta':
-                df = pd.read_sql_query(f"Select * from cftc.vw_wbeta where model_id = {model_id}",engine1)
+                df = pd.read_sql_query(f"Select * from cftc.vw_wbeta2 where model_id = {model_id}",engine1)
                 sns.lineplot(x = df.px_date,y = df.average,ax=ax_curr, linewidth = 2, legend = False,color ='darkblue')
                 ax_curr.set_xlim((dates_all[0],dates_all.iloc[-1]))
+                ax_curr.axhline(0, ls='--', color ='black')
+            elif showme == 'alpha': 
+                df = pd.read_sql_query(f"Select * from cftc.alpha where model_id = {model_id}",engine1)
+                sns.lineplot(x = df.px_date,y = df.qty,ax=ax_curr, linewidth = 2, legend = False,color ='darkblue')
+                ax_curr.set_xlim((dates_all[0],dates_all.iloc[-1]))
+                ax_curr.axhline(0, ls='--', color ='black')
             else:
                 print(f"wrong definition of showme: {showme}")
 
@@ -145,15 +157,11 @@ def getPlots(model_type_id,showme):
         plt.savefig(f"reports/figures/Ratio_exp_to_oi_{model_type_id}_draft.png",dpi=100) #'./reports/figures/'+
     elif showme == 'weighted_beta':
         plt.savefig(f"reports/figures/weightedBeta_{model_type_id}.png",dpi=100) #'./reports/figures/'+
+    elif showme == 'alpha':
+        plt.savefig(f"reports/figures/alpha_{model_type_id}.png",dpi=100) #'./reports/figures/'+
+        
     plt.show()
 
 #%% #Do plots and save them
 for model_type_id in [95,82,100,76]: #
-    getPlots(model_type_id= model_type_id,showme='weighted_beta')
-
-
-# %%
-model_id = 1899
-a = pd.read_sql_query(f"Select * from cftc.vw_wbeta where model_id = {model_id}",engine1)
-a.head()
-# %%
+    getPlots(model_type_id= model_type_id,showme='alpha')

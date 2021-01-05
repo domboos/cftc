@@ -8,7 +8,19 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 #* for other calcs:
 from cfunctions import *
-#%%
+
+#For overview
+model_types = pd.read_sql_query("SELECT * from cftc.model_type_desc where model_type_id IN (82,76,95,100)", engine1)
+
+#%% Functions:
+
+def getDates_of_MM():
+    model_ids = pd.read_sql_query(f" Select model_id,bb_tkr from cftc.model_desc where model_type_id = {95}", engine1)
+    model_ids_mm = list(model_ids.model_id)
+
+    min_max_dateMM = pd.read_sql_query(f"Select Min(px_date) startDate, max(px_date) endDate ,model_id from cftc.forecast where model_id IN ({str(model_ids_mm)[1:-1]} ) group by model_id",engine1)
+    dates_of_MM  = pd.merge(min_max_dateMM,model_ids, on = 'model_id', how = 'left')
+    return dates_of_MM
 
 def getDirection(df_sample):
     def binarity(x):
@@ -30,15 +42,6 @@ def getDirection(df_sample):
 
 
 
-def getDates_of_MM():
-    model_ids = pd.read_sql_query(f" Select model_id,bb_tkr from cftc.model_desc where model_type_id = {95}", engine1)
-    model_ids_mm = list(model_ids.model_id)
-
-    min_max_dateMM = pd.read_sql_query(f"Select Min(px_date) startDate, max(px_date) endDate ,model_id from cftc.forecast where model_id IN ({str(model_ids_mm)[1:-1]} ) group by model_id",engine1)
-    dates_of_MM  = pd.merge(min_max_dateMM,model_ids, on = 'model_id', how = 'left')
-    return dates_of_MM
-
-
 def getOpenInterest(bb_tkr):
     oi = gets(engine1, type='agg_open_interest', data_tab='vw_data', desc_tab='cot_desc', bb_tkr=bb_tkr)
     oi.columns =[ 'oi']
@@ -55,7 +58,7 @@ def getData(model_id,model_type_id,bb_tkr, model_types,start_date = None, end_da
     df_sample = pd.merge(left = forecast[['qty']], right = exposure[['diff']] , left_index = True, right_index = True, how = 'left')
     df_sample.columns = ['forecast','cftc']
 
-    print(df_sample.shape)
+    # print(df_sample.shape)
     #Adjust timespan
     if (start_date != None) & (end_date != None):
         df_sample = df_sample[(df_sample.index >= start_date)& (df_sample.index <= end_date)]
@@ -64,7 +67,7 @@ def getData(model_id,model_type_id,bb_tkr, model_types,start_date = None, end_da
     elif (start_date == None) & (end_date != None):
         df_sample = df_sample[df_sample.index <= end_date]
     
-    print(df_sample.shape)
+    # print(df_sample.shape)
     
     #get OpenInterst #? adjust dates in open interest? 
     oi = getOpenInterest(bb_tkr)
@@ -91,6 +94,29 @@ def getR2ByHand(df_sample,cftcVariableName,fcastVariableName):
         print(var_diff)
         return np.nan
 
+def getResiduals(model_type_id,cftcVariableName,fcastVariableName,timespan= None,fixedStartdate = None, fixedEndDate = None):
+    residuals = {}
+    residuals[0] = f"residuals to model type: {model_type_id}"
+    bb_tkrs = pd.read_sql_query(f"SELECT * FROM cftc.order_of_things",engine1).bb_tkr
+    model_types = pd.read_sql_query("SELECT * from cftc.model_type_desc", engine1)
+    if model_types.index.name != 'model_type_id':
+        model_types = model_types.set_index('model_type_id')
+    
+    models = pd.read_sql_query(f" Select * from cftc.model_desc where model_type_id = {int(model_type_id)}", engine1).set_index('model_id')
+
+    for i in models.index: #iterates through model_id
+        # print(i)
+        df_sample = getData(model_id = i,model_type_id= model_type_id,bb_tkr = models.loc[i,'bb_tkr'], model_types = model_types,start_date = fixedStartdate, end_date = fixedEndDate)
+
+        #* y = ax + b
+        x = sm.add_constant(df_sample[fcastVariableName]).values
+        y = df_sample[cftcVariableName].values
+        mod_fit = sm.OLS(y,x).fit()
+        residuals[ models.loc[i,'bb_tkr']] = mod_fit.resid
+    
+    return residuals
+
+
 #%% #? new
 # #* tEST:
 # model_type_id= 82
@@ -105,7 +131,7 @@ def getR2ByHand(df_sample,cftcVariableName,fcastVariableName):
 
 
 
-def getR2results(model_type_id,cftcVariableName,fcastVariableName,writetoExcel= False,note= 'test',timespan= None,fixedStartdate = None, fixedEndDate = None):
+def getR2results(model_type_id,cftcVariableName,fcastVariableName,note= 'test',timespan= None,fixedStartdate = None, fixedEndDate = None):
 
     bb_tkrs = pd.read_sql_query(f"SELECT * FROM cftc.order_of_things",engine1).bb_tkr
     model_types = pd.read_sql_query("SELECT * from cftc.model_type_desc", engine1)
@@ -158,6 +184,16 @@ def getR2results(model_type_id,cftcVariableName,fcastVariableName,writetoExcel= 
         y = df_sample[cftcVariableName].values
         mod_fit = sm.OLS(y,x).fit()
         # print(mod_fit.summary())
+        
+        #get T-statistics for Autocorr:
+        resid = mod_fit.resid
+        acf, ci = sm.tsa.acf(resid, alpha=0.05)
+        
+        k=1
+        for corr in acf[1:5]:
+            t = (corr*np.sqrt(len(resid)-k-2)) / np.sqrt(1- corr**2)
+            df_coefs.loc[i,f"AC_tstat_l{k}"] =  t       
+            k = k+1
                 
         df_r2_MincerZarnowitz.loc[model_type_id,models.loc[i,'bb_tkr']] = mod_fit.rsquared
         
@@ -196,33 +232,33 @@ cftcVariableName = 'cftc' #* OR cftc_adj
 fcastVariableName = 'forecast' #*OR 'forecast_adj'
 
 results = {}
-results['76_whole'] = getR2results(model_type_id= 76,cftcVariableName = cftcVariableName,fcastVariableName= fcastVariableName,writetoExcel= True,note = '76_whole',timespan= None)
-results['82_whole'] = getR2results(model_type_id= 82,cftcVariableName =cftcVariableName ,fcastVariableName= fcastVariableName,writetoExcel= True,note = '82_whole',timespan= None)
-results['95_whole'] = getR2results(model_type_id= 95,cftcVariableName =cftcVariableName ,fcastVariableName= fcastVariableName,writetoExcel= True,note = '95_whole',timespan= None)
-results['100_whole'] = getR2results(model_type_id= 100,cftcVariableName =cftcVariableName ,fcastVariableName= fcastVariableName,writetoExcel= True,note = '100_whole',timespan= None)
+results['76_whole'] = getR2results(model_type_id= 76,cftcVariableName = cftcVariableName,fcastVariableName= fcastVariableName,note = '76_whole',timespan= None)
+results['82_whole'] = getR2results(model_type_id= 82,cftcVariableName =cftcVariableName ,fcastVariableName= fcastVariableName,note = '82_whole',timespan= None)
+results['95_whole'] = getR2results(model_type_id= 95,cftcVariableName =cftcVariableName ,fcastVariableName= fcastVariableName,note = '95_whole',timespan= None)
+results['100_whole'] = getR2results(model_type_id= 100,cftcVariableName =cftcVariableName ,fcastVariableName= fcastVariableName,note = '100_whole',timespan= None)
 
-results['76_length_like_MM'] = getR2results(model_type_id= 76,cftcVariableName =cftcVariableName ,fcastVariableName= fcastVariableName,writetoExcel= True,note = '76_length_like_MM',timespan= 'MM')
-results['82_length_like_MM'] = getR2results(model_type_id= 82,cftcVariableName =cftcVariableName ,fcastVariableName= fcastVariableName,writetoExcel= True,note = '82_length_like_MM',timespan= 'MM')
+results['76_length_like_MM'] = getR2results(model_type_id= 76,cftcVariableName =cftcVariableName ,fcastVariableName= fcastVariableName,note = '76_length_like_MM',timespan= 'MM')
+results['82_length_like_MM'] = getR2results(model_type_id= 82,cftcVariableName =cftcVariableName ,fcastVariableName= fcastVariableName,note = '82_length_like_MM',timespan= 'MM')
 
-results['76_first_period'] = getR2results(model_type_id= 76,cftcVariableName =cftcVariableName ,fcastVariableName= fcastVariableName,writetoExcel= True,note = '76_first_period',fixedStartdate = first_start, fixedEndDate = first_end)
-results['82_first_period'] = getR2results(model_type_id= 82,cftcVariableName =cftcVariableName ,fcastVariableName= fcastVariableName,writetoExcel= True,note = '82_first_period',fixedStartdate = first_start, fixedEndDate = first_end)
-results['95_first_period'] = getR2results(model_type_id= 95,cftcVariableName =cftcVariableName ,fcastVariableName= fcastVariableName,writetoExcel= True,note = '95_first_period',fixedStartdate = first_start, fixedEndDate = first_end)
-results['100_first_period'] = getR2results(model_type_id= 100,cftcVariableName =cftcVariableName ,fcastVariableName= fcastVariableName,writetoExcel= True,note = '100_first_period',fixedStartdate = first_start, fixedEndDate = first_end)
+results['76_first_period'] = getR2results(model_type_id= 76,cftcVariableName =cftcVariableName ,fcastVariableName= fcastVariableName,note = '76_first_period',fixedStartdate = first_start, fixedEndDate = first_end)
+results['82_first_period'] = getR2results(model_type_id= 82,cftcVariableName =cftcVariableName ,fcastVariableName= fcastVariableName,note = '82_first_period',fixedStartdate = first_start, fixedEndDate = first_end)
+results['95_first_period'] = getR2results(model_type_id= 95,cftcVariableName =cftcVariableName ,fcastVariableName= fcastVariableName,note = '95_first_period',fixedStartdate = first_start, fixedEndDate = first_end)
+results['100_first_period'] = getR2results(model_type_id= 100,cftcVariableName =cftcVariableName ,fcastVariableName= fcastVariableName,note = '100_first_period',fixedStartdate = first_start, fixedEndDate = first_end)
 
-results['76_second_period'] = getR2results(model_type_id= 76,cftcVariableName =cftcVariableName ,fcastVariableName= fcastVariableName,writetoExcel= True,note = '76_second_period',fixedStartdate = second_start, fixedEndDate = second_end)
-results['82_second_period'] = getR2results(model_type_id= 82,cftcVariableName =cftcVariableName ,fcastVariableName= fcastVariableName,writetoExcel= True,note = '82_second_period',fixedStartdate = second_start, fixedEndDate = second_end)
-results['95_second_period'] = getR2results(model_type_id= 95,cftcVariableName =cftcVariableName ,fcastVariableName= fcastVariableName,writetoExcel= True,note = '95_second_period',fixedStartdate = second_start, fixedEndDate = second_end)
-results['100_second_period'] = getR2results(model_type_id= 100,cftcVariableName =cftcVariableName ,fcastVariableName= fcastVariableName,writetoExcel= True,note = '100_second_period',fixedStartdate = second_start, fixedEndDate = second_end)
+results['76_second_period'] = getR2results(model_type_id= 76,cftcVariableName =cftcVariableName ,fcastVariableName= fcastVariableName,note = '76_second_period',fixedStartdate = second_start, fixedEndDate = second_end)
+results['82_second_period'] = getR2results(model_type_id= 82,cftcVariableName =cftcVariableName ,fcastVariableName= fcastVariableName,note = '82_second_period',fixedStartdate = second_start, fixedEndDate = second_end)
+results['95_second_period'] = getR2results(model_type_id= 95,cftcVariableName =cftcVariableName ,fcastVariableName= fcastVariableName,note = '95_second_period',fixedStartdate = second_start, fixedEndDate = second_end)
+results['100_second_period'] = getR2results(model_type_id= 100,cftcVariableName =cftcVariableName ,fcastVariableName= fcastVariableName,note = '100_second_period',fixedStartdate = second_start, fixedEndDate = second_end)
 
-results['76_third_period'] = getR2results(model_type_id= 76,cftcVariableName =cftcVariableName ,fcastVariableName= fcastVariableName,writetoExcel= True,note = '76_third_period',fixedStartdate = third_start, fixedEndDate = third_end)
-results['82_third_period'] = getR2results(model_type_id= 82,cftcVariableName =cftcVariableName ,fcastVariableName= fcastVariableName,writetoExcel= True,note = '82_third_period',fixedStartdate = third_start, fixedEndDate = third_end)
-results['95_third_period'] = getR2results(model_type_id= 95,cftcVariableName =cftcVariableName ,fcastVariableName= fcastVariableName,writetoExcel= True,note = '95_third_period',fixedStartdate = third_start, fixedEndDate = third_end)
-results['100_third_period'] = getR2results(model_type_id= 100,cftcVariableName =cftcVariableName ,fcastVariableName= fcastVariableName,writetoExcel= True,note = '100_third_period',fixedStartdate = third_start, fixedEndDate = third_end)
+results['76_third_period'] = getR2results(model_type_id= 76,cftcVariableName =cftcVariableName ,fcastVariableName= fcastVariableName,note = '76_third_period',fixedStartdate = third_start, fixedEndDate = third_end)
+results['82_third_period'] = getR2results(model_type_id= 82,cftcVariableName =cftcVariableName ,fcastVariableName= fcastVariableName,note = '82_third_period',fixedStartdate = third_start, fixedEndDate = third_end)
+results['95_third_period'] = getR2results(model_type_id= 95,cftcVariableName =cftcVariableName ,fcastVariableName= fcastVariableName,note = '95_third_period',fixedStartdate = third_start, fixedEndDate = third_end)
+results['100_third_period'] = getR2results(model_type_id= 100,cftcVariableName =cftcVariableName ,fcastVariableName= fcastVariableName,note = '100_third_period',fixedStartdate = third_start, fixedEndDate = third_end)
 
-results['76_fourth_period'] = getR2results(model_type_id= 76,cftcVariableName =cftcVariableName ,fcastVariableName= fcastVariableName,writetoExcel= True,note = '76_fourth_period',fixedStartdate = fourth_start, fixedEndDate = fourth_end)
-results['82_fourth_period'] = getR2results(model_type_id= 82,cftcVariableName =cftcVariableName ,fcastVariableName= fcastVariableName,writetoExcel= True,note = '82_fourth_period',fixedStartdate = fourth_start, fixedEndDate = fourth_end)
-results['95_fourth_period'] = getR2results(model_type_id= 95,cftcVariableName =cftcVariableName ,fcastVariableName= fcastVariableName,writetoExcel= True,note = '95_fourth_period',fixedStartdate = fourth_start, fixedEndDate = fourth_end)
-results['100_fourth_period'] = getR2results(model_type_id= 100,cftcVariableName =cftcVariableName ,fcastVariableName= fcastVariableName,writetoExcel= True,note = '100_fourth_period',fixedStartdate = fourth_start, fixedEndDate = fourth_end)
+results['76_fourth_period'] = getR2results(model_type_id= 76,cftcVariableName =cftcVariableName ,fcastVariableName= fcastVariableName,note = '76_fourth_period',fixedStartdate = fourth_start, fixedEndDate = fourth_end)
+results['82_fourth_period'] = getR2results(model_type_id= 82,cftcVariableName =cftcVariableName ,fcastVariableName= fcastVariableName,note = '82_fourth_period',fixedStartdate = fourth_start, fixedEndDate = fourth_end)
+results['95_fourth_period'] = getR2results(model_type_id= 95,cftcVariableName =cftcVariableName ,fcastVariableName= fcastVariableName,note = '95_fourth_period',fixedStartdate = fourth_start, fixedEndDate = fourth_end)
+results['100_fourth_period'] = getR2results(model_type_id= 100,cftcVariableName =cftcVariableName ,fcastVariableName= fcastVariableName,note = '100_fourth_period',fixedStartdate = fourth_start, fixedEndDate = fourth_end)
 
 
 df_coefs = pd.DataFrame()
@@ -238,7 +274,7 @@ for item in list(results):
 
 
 #* Write to results:
-writer = pd.ExcelWriter(f'reports\\results\\Final_results_non_adj_01.xlsx', engine='xlsxwriter')
+writer = pd.ExcelWriter(f'reports\\results\\Final_results_non_adj_02.xlsx', engine='xlsxwriter')
 
 df_coefs.to_excel(writer, sheet_name= 'coefs')
 df_r2_MincerZarnowitz.to_excel(writer, sheet_name = 'r2_MZ') 
@@ -248,34 +284,14 @@ writer.save()
 
 
 
-#%% Residual Function:
-def getResiduals(model_type_id,cftcVariableName,fcastVariableName,timespan= None,fixedStartdate = None, fixedEndDate = None):
-    residuals = {}
-    residuals[0] = f"residuals to model type: {model_type_id}"
-    bb_tkrs = pd.read_sql_query(f"SELECT * FROM cftc.order_of_things",engine1).bb_tkr
-    model_types = pd.read_sql_query("SELECT * from cftc.model_type_desc", engine1)
-    if model_types.index.name != 'model_type_id':
-        model_types = model_types.set_index('model_type_id')
-    models = pd.read_sql_query(f" Select * from cftc.model_desc where model_type_id = {int(model_type_id)}", engine1).set_index('model_id')
 
-    for i in models.index: #iterates through model_id
-        print(i)
-        df_sample = getData(model_id = i,model_type_id= model_type_id,bb_tkr = models.loc[i,'bb_tkr'], model_types = model_types,start_date = fixedStartdate, end_date = fixedEndDate)
 
-        #* y = ax + b
-        x = sm.add_constant(df_sample[fcastVariableName]).values
-        y = df_sample[cftcVariableName].values
-        mod_fit = sm.OLS(y,x).fit()
-        residuals[ models.loc[i,'bb_tkr']] = mod_fit.resid
-    
-    return residuals
-
-#%%
+#%% #* Plot Autocorrelation
 cftcVariableName = 'cftc' #* OR cftc_adj
 fcastVariableName = 'forecast' #*OR 'forecast_adj'
 # model_type_id = 100
 
-for model_type_id in [100,95,82,76]:
+for model_type_id in [76]: #,95,82,76]:
     residuals = getResiduals(model_type_id,cftcVariableName,fcastVariableName,timespan= None,fixedStartdate = None, fixedEndDate = None)
 
     bb_tkrs = pd.read_sql_query(f"SELECT * FROM cftc.order_of_things",engine1).bb_tkr
@@ -310,4 +326,58 @@ for model_type_id in [100,95,82,76]:
     plt.savefig(f"reports/figures/Autocorr-{model_type_id}.png",dpi=100) #'./reports/figures/'+
     plt.show()
 
+# %%
+cftcVariableName = 'cftc' #* OR cftc_adj
+fcastVariableName = 'forecast' #*OR 'forecast_adj'
+
+
+
+
+#%%
+df = pd.DataFrame()
+print(list(result))
+for item in result:
+    df = df.append(result[item])
+df.to_excel('reports/Autocorrelation_tstats.xlsx')
+# %%
+#%% #* Test for autocorrelation: https://openstax.org/books/introductory-business-statistics/pages/13-2-testing-the-significance-of-the-correlation-coefficient
+from statsmodels.stats.stattools import durbin_watson
+
+cftcVariableName = 'cftc' #* OR cftc_adj
+fcastVariableName = 'forecast' #*OR 'forecast_adj'
+
+result = {}
+for model_type_id in [76]: #100,95,82,76]:
+    residuals = getResiduals(model_type_id,cftcVariableName,fcastVariableName,timespan= None,fixedStartdate = None, fixedEndDate = None)
+
+    temp_result = pd.DataFrame(index = list(residuals),columns = ['lag1','lag2','lag3','lag4'])
+    for bb_tkr in list(residuals)[1:]:
+        # print(bb_tkr)
+        # plot_acf(residuals[bb_tkr], lags=np.arange(100)[1:])
+        # print(durbin_watson(residuals[bb_tkr]))
+
+        acf, ci = sm.tsa.acf(residuals[bb_tkr], alpha=0.05)
+        # print(acf)
+
+        tstat = list()
+        k=1
+        for corr in acf[1:5]:
+            if (bb_tkr == 'CT') & (k ==1):
+                print(acf)
+                print(f"corr: {corr}")
+                print(f"k: {k}")
+                print((len(residuals[bb_tkr])-k-2))
+            t = (corr*np.sqrt(len(residuals[bb_tkr])-k-2)) / np.sqrt(1- corr**2)
+            k = k+1
+            tstat.append(t)
+        # print(tstat)
+        try:
+            temp_result.loc[bb_tkr,:] = tstat
+        except:
+            print(temp_result.columns)
+            print(tstat)
+            break
+        
+    temp_result['Note'] = model_type_id
+    result[model_type_id] = temp_result
 # %%
