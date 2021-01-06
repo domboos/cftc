@@ -174,6 +174,7 @@ def getGamma(maxlag, regularization='d1', gammatype='sqrt', gammapara=1, naildow
 
     # standardize sum of diagonal values to 1
     gsum = gamma.diagonal(0).sum()
+    print(gsum)
     gamma[np.diag_indices_from(gamma)] /= gsum
 
     # default case
@@ -237,6 +238,22 @@ def press(a, _y, _x, g):
     return 0.000001 * np.transpose(BiHy) @ BiHy / n
 
 
+def press_2(a1, _y, _x, g1, g2):
+    # A is an array
+    # G are Gamma matrices
+
+    print(a1.shape)
+    try:
+        g = a1[0] * g1 + a1[1] * g2
+    except:
+        print(a1)
+    n = np.shape(_y)[0]
+    iH = np.identity(n) - _x @ np.linalg.inv(np.transpose(_x) @ _x + np.transpose(g) @ g) @ np.transpose(_x)
+    B = np.diag(1 / np.diag(iH))
+    BiHy = B @ iH @ _y
+    return 0.000001 * np.transpose(BiHy) @ BiHy / n
+
+
 def getAlpha(alpha_type, y, x=None, gma=None, start=None):
     """
     Parameters
@@ -262,6 +279,11 @@ def getAlpha(alpha_type, y, x=None, gma=None, start=None):
         res = minimize(press1, x0=start, bounds=bnds, method='Nelder-Mead', options={'disp': True,
                         'maxiter': 500, 'xatol': 0.01, 'fatol': 0.1})
         alpha = res.x
+    elif alpha_type == 'loocv':
+        press1 = lambda z, z1=y.values, z2=x, z3=gma: press(z, z1, z2, z3)
+        res = minimize(press1, x0=start, bounds=bnds, method='Nelder-Mead', options={'disp': True,
+                        'maxiter': 500, 'xatol': 0.01, 'fatol': 0.1})
+        alpha = res.x
     elif alpha_type == 'gcv':
         gcv1 = lambda z, z1=y.values, z2=x, z3=gma: gcv(z, z1, z2, z3)
         res = minimize(gcv1, x0=start, bounds=bnds, method='Nelder-Mead', options={'disp': True,
@@ -272,6 +294,31 @@ def getAlpha(alpha_type, y, x=None, gma=None, start=None):
     print(alpha)
 
     return alpha
+
+def getGammaOpt(y, x=None, gma1=None, gma2=None, start=None):
+    """
+    Parameters
+    ----------
+    alpha_type : str()
+        either 'stdev',var'
+    y : np vector
+        independent variable
+
+    Returns
+    -------
+    alpha : value
+        scaling factor for gamma matrix
+
+    """
+    #bounds=bnds,
+    press1 = lambda a1, z1=y.values, z2=x, z3=gma1, z4=gma2: press_2(a1, z1, z2, z3, z4)
+    res = minimize(press1, x0=start, method='Powell')
+
+    alpha = res.x
+
+    print(alpha)
+
+    return alpha[0]*gma1+alpha[1]*gma2
 
 
 def merge_pos_ret(pos, ret, diff):
@@ -344,9 +391,21 @@ for idx, model in model_list.iterrows():
             x0 = cr['ret'].loc[w_start:w_end, :].values
             y0 = cr['cftc'].loc[w_start:w_end, :]
 
-        try:
-            alpha = getAlpha(alpha_type=model.alpha_type, y=y0, x=x0, gma=gamma, start=alpha) * model.alpha
-        except:
+        #try:
+            if model.gamma_type == 'new':
+                gamma1 = getGamma(maxlag=model.lookback, regularization=model.regularization, gammatype='flat',
+                                 gammapara=model.gamma_para, naildownvalue0=model.naildown_value0,
+                                 naildownvalue1=model.naildown_value1)
+                gamma2 = getGamma(maxlag=model.lookback, regularization=model.regularization, gammatype='sqrt',
+                                 gammapara=model.gamma_para, naildownvalue0=model.naildown_value0,
+                                 naildownvalue1=model.naildown_value1)
+                s0 = np.array([100,100])
+                print(s0.shape)
+                gamma_tmp = getGammaOpt(y=y0, x=x0, gma1=gamma1, gma2=gamma2, start=s0)
+            else:
+                alpha = getAlpha(alpha_type=model.alpha_type, y=y0, x=x0, gma=gamma, start=alpha) * model.alpha
+                gamma_tmp = gamma * alpha
+        #except:
             print(y0)
             print(x0.shape)
             print(gamma.shape)
@@ -354,7 +413,7 @@ for idx, model in model_list.iterrows():
             alpha = getAlpha(alpha_type=model.alpha_type, y=y0, x=x0, gma=gamma, start=alpha) * model.alpha
 
         y = np.concatenate((y0, np.zeros((gamma.shape[0], 1))))
-        x = np.concatenate((x0, gamma * alpha), axis=0)
+        x = np.concatenate((x0, gamma_tmp), axis=0)
 
         ##  fit the models
         model_fit = sm.OLS(y, x).fit()
