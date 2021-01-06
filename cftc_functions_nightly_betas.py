@@ -243,10 +243,9 @@ def press_2(a1, _y, _x, g1, g2):
     # G are Gamma matrices
 
     print(a1.shape)
-    try:
-        g = a1[0] * g1 + a1[1] * g2
-    except:
-        print(a1)
+
+    g = a1[0] * g1 + a1[1] * g2
+    print(a1)
     n = np.shape(_y)[0]
     iH = np.identity(n) - _x @ np.linalg.inv(np.transpose(_x) @ _x + np.transpose(g) @ g) @ np.transpose(_x)
     B = np.diag(1 / np.diag(iH))
@@ -312,7 +311,7 @@ def getGammaOpt(y, x=None, gma1=None, gma2=None, start=None):
     """
     #bounds=bnds,
     press1 = lambda a1, z1=y.values, z2=x, z3=gma1, z4=gma2: press_2(a1, z1, z2, z3, z4)
-    res = minimize(press1, x0=start, method='Powell')
+    res = minimize(press_2, args=(y.values, x, gma1, gma2), x0=start)
 
     alpha = res.x
 
