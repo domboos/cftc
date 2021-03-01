@@ -211,3 +211,14 @@ compare2Models(model_typeMM=model_typeMM,model_typeNonc=model_typeNonc ,labels= 
 model_typeMM = 100 #*Model2
 model_typeNonc = 82  #*model1 
 compare2Models(model_typeMM=model_typeMM,model_typeNonc=model_typeNonc ,labels= ['MM-square root','NonC-square root'],dates=dates,savefig = True,pathSaveFig = "reports//figures//Betas//")
+
+#%%
+engine1 = sq.create_engine("postgresql+psycopg2://grbi@iwa-backtest:grbizhaw@iwa-backtest.postgres.database.azure.com:5432/postgres")
+#define Dates
+dates = ['2019-12-31']
+labels = [] #['window 280','window 260']
+
+pathSaveFig = "/home/jovyan/work/reports/figures/Betas/"
+model_typeMM = 100 #*Model2
+model_typeNonc = 95  #*model1 
+
