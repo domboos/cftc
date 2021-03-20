@@ -6,6 +6,7 @@ from statsmodels.graphics.tsaplots import plot_acf
 import seaborn as sns
 import matplotlib.pyplot as plt
 from datetime import datetime
+import pandas as pd
 #* for other calcs:
 from cfunctions import *
 
@@ -75,4 +76,4 @@ res2 = compare2ModelsForecast(model1_type_id = 95,model2_type_id= 100)
 
 df = res1.append(res2)
 
-df.to_excel('forecast_comparison.xlsx')
+df.to_excel('forecast_comparison_v2.xlsx')
