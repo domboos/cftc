@@ -12,6 +12,7 @@ from cfunctions import *
 #For overview
 model_types = pd.read_sql_query("SELECT * from cftc.model_type_desc where model_type_id IN (82,76,95,100)", engine1)
 
+
 #%% Functions:
 
 def getDates_of_MM():
@@ -94,7 +95,7 @@ def getR2ByHand(df_sample,cftcVariableName,fcastVariableName):
         print(var_diff)
         return np.nan
 
-def getResiduals(model_type_id,cftcVariableName,fcastVariableName,timespan= None,fixedStartdate = None, fixedEndDate = None):
+def getResiduals(model_type_id,cftcVariableName,fcastVariableName,timespan= None,fixedStartdate = None, fixedEndDate = None,type_ = None):
     residuals = {}
     residuals[0] = f"residuals to model type: {model_type_id}"
     bb_tkrs = pd.read_sql_query(f"SELECT * FROM cftc.order_of_things",engine1).bb_tkr
@@ -108,11 +109,15 @@ def getResiduals(model_type_id,cftcVariableName,fcastVariableName,timespan= None
         # print(i)
         df_sample = getData(model_id = i,model_type_id= model_type_id,bb_tkr = models.loc[i,'bb_tkr'], model_types = model_types,start_date = fixedStartdate, end_date = fixedEndDate)
 
-        #* y = ax + b
-        x = sm.add_constant(df_sample[fcastVariableName]).values
-        y = df_sample[cftcVariableName].values
-        mod_fit = sm.OLS(y,x).fit()
-        residuals[ models.loc[i,'bb_tkr']] = mod_fit.resid
+        if type_ == 'diff':
+            residuals[models.loc[i,'bb_tkr']] = (df_sample.cftc - df_sample.forecast_adj).values
+        
+        else:
+            #* y = ax + b
+            x = sm.add_constant(df_sample[fcastVariableName]).values
+            y = df_sample[cftcVariableName].values
+            mod_fit = sm.OLS(y,x).fit()
+            residuals[ models.loc[i,'bb_tkr']] = mod_fit.resid
     
     return residuals
 
@@ -274,7 +279,7 @@ for item in list(results):
 
 
 #* Write to results:
-writer = pd.ExcelWriter(f'reports\\results\\Final_results_non_adj_02.xlsx', engine='xlsxwriter')
+writer = pd.ExcelWriter(f'reports\\results\\R2_results_for_paper_v2.xlsx', engine='xlsxwriter')
 
 df_coefs.to_excel(writer, sheet_name= 'coefs')
 df_r2_MincerZarnowitz.to_excel(writer, sheet_name = 'r2_MZ') 
@@ -292,7 +297,7 @@ fcastVariableName = 'forecast' #*OR 'forecast_adj'
 # model_type_id = 100
 
 for model_type_id in [76]: #,95,82,76]:
-    residuals = getResiduals(model_type_id,cftcVariableName,fcastVariableName,timespan= None,fixedStartdate = None, fixedEndDate = None)
+    residuals = getResiduals(model_type_id,cftcVariableName,fcastVariableName,timespan= None,fixedStartdate = None, fixedEndDate = None,type_ = 'diff')
 
     bb_tkrs = pd.read_sql_query(f"SELECT * FROM cftc.order_of_things",engine1).bb_tkr
     oot = pd.read_sql_query(f"SELECT * FROM cftc.order_of_things",engine1)
@@ -326,20 +331,6 @@ for model_type_id in [76]: #,95,82,76]:
     plt.savefig(f"reports/figures/Autocorr-{model_type_id}.png",dpi=100) #'./reports/figures/'+
     plt.show()
 
-# %%
-cftcVariableName = 'cftc' #* OR cftc_adj
-fcastVariableName = 'forecast' #*OR 'forecast_adj'
-
-
-
-
-#%%
-df = pd.DataFrame()
-print(list(result))
-for item in result:
-    df = df.append(result[item])
-df.to_excel('reports/Autocorrelation_tstats.xlsx')
-# %%
 #%% #* Test for autocorrelation: https://openstax.org/books/introductory-business-statistics/pages/13-2-testing-the-significance-of-the-correlation-coefficient
 from statsmodels.stats.stattools import durbin_watson
 
@@ -348,36 +339,25 @@ fcastVariableName = 'forecast' #*OR 'forecast_adj'
 
 result = {}
 for model_type_id in [76]: #100,95,82,76]:
-    residuals = getResiduals(model_type_id,cftcVariableName,fcastVariableName,timespan= None,fixedStartdate = None, fixedEndDate = None)
+    residuals = getResiduals(model_type_id,cftcVariableName,fcastVariableName,timespan= None,fixedStartdate = None, fixedEndDate = None,type_ = 'diff')
 
-    temp_result = pd.DataFrame(index = list(residuals),columns = ['lag1','lag2','lag3','lag4'])
+    temp_result = pd.DataFrame(index = list(residuals),columns = ['lag1-tstat','lag2-tstat'])
     for bb_tkr in list(residuals)[1:]:
-        # print(bb_tkr)
-        # plot_acf(residuals[bb_tkr], lags=np.arange(100)[1:])
-        # print(durbin_watson(residuals[bb_tkr]))
-
-        acf, ci = sm.tsa.acf(residuals[bb_tkr], alpha=0.05)
-        # print(acf)
-
-        tstat = list()
-        k=1
-        for corr in acf[1:5]:
-            if (bb_tkr == 'CT') & (k ==1):
-                print(acf)
-                print(f"corr: {corr}")
-                print(f"k: {k}")
-                print((len(residuals[bb_tkr])-k-2))
-            t = (corr*np.sqrt(len(residuals[bb_tkr])-k-2)) / np.sqrt(1- corr**2)
-            k = k+1
-            tstat.append(t)
-        # print(tstat)
-        try:
-            temp_result.loc[bb_tkr,:] = tstat
-        except:
-            print(temp_result.columns)
-            print(tstat)
-            break
+        
+        a = pd.DataFrame(data = residuals[bb_tkr], columns =['diff_'])
+        a[f"lag_1"] = a.diff_.shift(1)
+        a[f"lag_2"] = a.diff_.shift(2)
+        
+        a = a.dropna()
+        x = sm.add_constant(a['lag_1']).values
+        y = a['diff_'].values
+        mod_fit = sm.OLS(y,x).fit()
+        
+        temp_result.loc[bb_tkr,'lag1-tstat'] = mod_fit.tvalues[1]
+        x = sm.add_constant(a['lag_2']).values
+        mod_fit = sm.OLS(y,x).fit()
+        temp_result.loc[bb_tkr,'lag2-tstat'] = mod_fit.tvalues[1]
+        
         
     temp_result['Note'] = model_type_id
     result[model_type_id] = temp_result
-# %%

@@ -177,8 +177,8 @@ def dm_test(actual_lst, pred1_lst, pred2_lst, h = 1, crit="MSE", power = 2):
 
 #%%
 model_types = pd.read_sql_query("select * from cftc.model_type_desc",engine1)
-model_type1 = 100 #82 
-model_type2 = 95 #76
+model_type1 = 82 #100
+model_type2 = 76 #95 #76
 # %%
 
 
@@ -207,7 +207,7 @@ for bb_tkr in oot.bb_tkr:
     dm = dm_test(actual_lst = df.diffs.values, pred1_lst= df.fcast1.values, pred2_lst = df.fcast2.values, h = 1, crit="MSE", power = 2)
     res.loc[bb_tkr,'DM-Stat'] = dm[0]
     res.loc[bb_tkr,'pvalue'] = dm[1]
-    res.to_excel(f"DM_{model_type1}_{model_type2}.xlsx")
+    res.to_excel(f"DM_{model_type1}_{model_type2}_v2.xlsx")
 # %%
 res_100_95 = res.copy()
 # %%
