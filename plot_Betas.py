@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+#%%
 """
 Created on Wed Nov  4 02:11:00 2020
 
@@ -7,7 +8,7 @@ Created on Wed Nov  4 02:11:00 2020
 
 import os
 # os.chdir('C:\\Users\\grbi\\PycharmProjects\\cftc')
-os.chdir('C:\\Users\\grbi\\PycharmProjects\\cftc_neu\\results')
+#os.chdir('C:\\Users\\grbi\\PycharmProjects\\cftc_neu\\results')
 
 import numpy as np
 import statsmodels.api as sm
@@ -19,70 +20,63 @@ import matplotlib.pyplot as plt
 
 import sqlalchemy as sq
 engine1 = sq.create_engine("postgresql+psycopg2://grbi@iwa-backtest:grbizhaw@iwa-backtest.postgres.database.azure.com:5432/postgres")
-
-
-def getYearEndDates(betas_stacked):
-    """
-    Parameters
-    ----------
-    betas_stacked : pd.DataFrame()
-        betas of a specific Model --> Raw Version
-
-    Returns
-    -------
-    list_yearEndDate : list()
-        list of year end dates for Plots.
-    """
-    dates = pd.DataFrame( index = betas_stacked.reset_index().px_date.drop_duplicates().sort_values())
-    dates['year'] = dates.index.year
-    list_yearEndDate = list(dates['year'].drop_duplicates(keep = 'last').index)
-    return list_yearEndDate
-
-
-
+#%%
 #get all models which are already calculated
-model_list = pd.read_sql_query("SELECT * FROM cftc.vw_model_desc ORDER BY bb_tkr, bb_ykey", engine1)
-temp = model_list[model_list.bb_tkr == 'PL']
 #TODO: Define model_id for the plot
-model_id = 764 # FC 
-model_id = 963 # FC 
-model_id = 202 # PL
-model_id = 733 # PL
-model_id = 1050
+# Query: select * from cftc.model_desc where model_type_id = 82 and bb_tkr in ('W','CL','SB','GC');
+# Model Type ID: 
+# "2019"	"SB"
+# "2023"	"CL"
+# "2031"	"GC"
+# "2039"	"W"
+model_ids =[2019,2023,2031,2039]
+px_dates = ['1999-12-28','2004-12-28','2009-12-29','2014-12-30','2019-12-31']
+titles = ['Sugar','WTI','Gold','Chicago Wheat']
 
-#Get Data and transform DataTypes (easier handling later on)
-betas_stacked = pd.read_sql_query(str("SELECT px_date,return_lag,qty FROM cftc.beta where model_id = " + str(model_id)),engine1)
-betas_stacked.px_date = betas_stacked.px_date.astype('datetime64[ns]')
-betas_stacked.return_lag = betas_stacked.return_lag.astype('int') 
-betas_stacked.qty = betas_stacked.qty.astype('float') 
+# %%
+#*define Layout
+color = ['lime', 'cyan','deepskyblue','blueviolet','crimson'] # https://matplotlib.org/3.1.0/gallery/color/named_colors.html
+fig, axs = plt.subplots(2, 2, sharex=True, sharey= False ,figsize=(15,10))
+fig.tight_layout()
+# fig.suptitle(f"All Betas with model_id: {model_typeNonc},{model_typeMM}",fontsize=30)
+# fig.subplots_adjust(top=0.95)
 
-
-uniqueDates = betas_stacked.px_date.drop_duplicates().reset_index(drop = True)
-
-beta2 = betas_stacked.copy()
-beta2 = beta2.set_index(['px_date','return_lag'])
-beta2 = beta2.unstack()
-betas = pd.DataFrame(index = uniqueDates, data= beta2.values) 
-betas = betas.rename(columns={x:y for x,y in zip(betas.columns,range(1,len(betas.columns)+1))})
-del beta2
-
-yearEndDates = getYearEndDates(betas_stacked)
-temp_betas = betas[betas.index.isin(yearEndDates)]
-
-plt.figure(figsize = (15,8))
-plt.title(str("Average Betas of "))
 sns.set(font_scale = 1.5)
 sns.set_style('white')
 sns.set_style('white', {'font.family':'serif', 'font.serif':'Times New Roman'})
-sns.lineplot(data = temp_betas.T, dashes =False)
-sns.despine()
-
-plt.show()
 
 
+# DO Plots:
+plot_matrix = np.arange(4).reshape(2,2)
+for col in range(len(plot_matrix[0])):
+    # print(f"Row: {row}")print(f"Row: {row}")
+    for row in range(len(plot_matrix)):
+        print(f"col: {col}");print(f"Row: {row}")
+
+        model_id = model_ids[plot_matrix[row][col]]
+        print(model_id)
+
+        ax_curr = axs[row,col]
+        
+        for idx in range(len(px_dates)):
+            beta = pd.read_sql_query(f"select * from cftc.beta where model_id = {model_id} and px_date = '{px_dates[idx]}'",engine1)
+            sns.lineplot(x = beta.return_lag,y = beta.qty ,ax =ax_curr, linewidth = 3, legend = False,color =color[idx])
+        
+        ax_curr.axhline(0, ls='--', color ='black')
+        # ax_curr.yaxis.set_major_formatter(FormatStrFormatter('%e'))
+        title = str(titles[plot_matrix[row][col]])
+        ax_curr.set_title(title)
+        ax_curr.set_xlabel('')
+        ax_curr.set_ylabel('')
+        if plot_matrix[row][col] == 3:
+            ax_curr.legend(px_dates, frameon = False)
+        plt.savefig(f"Betas_over_Time.png",dpi=100)
+        
+        
 
 
 
 
+#%%
 
-
+beta = pd.read_sql_query(f"select * from cftc.beta where model_id = {model_ids[0]} and px_date = '{px_dates[0]}'",engine1)
