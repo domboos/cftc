@@ -82,11 +82,14 @@ def getexposure(type_of_trader, norm, bb_tkr, start_dt='1900-01-01', end_dt='210
         exposure = pd.DataFrame(index=df_merge.index)
         exposure['qty'] = (df_merge.qty_y * df_merge.qty_x).values
 
-    else:
-        print('wrong type_of_exposure')
+    elif norm == 'number':
+        exposure = pos.copy()
+        print('--- NUMBER ---')
 
     midx = pd.MultiIndex(levels=[['cftc'], ['net_specs']], codes=[[0], [0]])
     exposure.columns = midx
+
+    print(exposure.to_string())
 
     return exposure
 

@@ -1,12 +1,32 @@
 CREATE MATERIALIZED VIEW cftc.vw_data AS
 
+WITH COT_RAW AS
+(
 SELECT dat.px_id,
     dat.px_date,
     CASE WHEN dat.px_date < mult.adj_date THEN dat.qty/mult.adj_factor
-	ELSE dat.qty END as qty
+	ELSE dat.qty END as qty,
+	cd.bb_tkr,
+	cd.bb_ykey,
+	cd.cot_type
    FROM cftc.data dat
      LEFT JOIN cftc.cot_desc cd ON dat.px_id = cd.cot_id
 	 LEFT JOIN cftc.fut_mult mult ON cd.bb_tkr = mult.bb_tkr and cd.bb_ykey = mult.bb_ykey
+)
+
+SELECT px_id, px_date, qty FROM COT_RAW
+
+UNION ALL
+
+SELECT cd.cot_id as px_id,
+    dat1.px_date,
+    dat1.qty-dat2.qty AS qty
+  FROM COT_RAW dat2
+    LEFT JOIN COT_RAW dat1 ON dat2.px_date = dat1.px_date
+	AND dat2.bb_tkr = dat1.bb_tkr AND dat2.bb_ykey = dat1.bb_ykey
+    LEFT JOIN cftc.cot_desc cd ON dat1.bb_tkr = cd.bb_tkr AND dat1.bb_ykey = cd.bb_ykey
+    WHERE dat2.cot_type = 'net_managed_money'
+	AND dat1.cot_type = 'net_non_commercials' AND cd.cot_type = 'net_other_reportables'
 
 UNION ALL
 
@@ -22,3 +42,6 @@ SELECT cd2.px_id,
 	 AND cd2.roll::text = 'active_futures'::text AND cd2.adjustment::text = 'none'::text
 
 WITH DATA;
+
+ALTER TABLE cftc.vw_data
+    OWNER TO pren;

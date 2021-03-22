@@ -13,11 +13,11 @@ import sqlalchemy as sq
 
 engine1 = sq.create_engine("postgresql+psycopg2://grbi@iwa-backtest:grbizhaw@iwa-backtest.postgres.database.azure.com:5432/postgres")
 
-file = 'C:\\Users\\bood\\switchdrive\\Tracking Traders\\02_Daten\\desc_tables.xlsx'
+file = 'U:\\NetNC.xlsx'
 
-pd.read_excel(file, 'model_desc').to_sql('model_desc', engine1, schema='cftc', if_exists='append', index=False)
+pd.read_excel(file, 'import').to_sql('data', engine1, schema='cftc', if_exists='append', index=False)
 
-file2 = 'C:\\Users\\bood\\switchdrive\\Tracking Traders\\02_Daten\\02_readyforimport\\px_adj_none.xlsx'
+# file2 = 'C:\\Users\\bood\\switchdrive\\Tracking Traders\\02_Daten\\02_readyforimport\\px_adj_none.xlsx'
 
 #.dropna(axis=0, how='any')
 #h= pd.read_excel(file2, 'load', skiprows=1, header=0, index_col=0).stack()\
@@ -25,4 +25,3 @@ file2 = 'C:\\Users\\bood\\switchdrive\\Tracking Traders\\02_Daten\\02_readyforim
 
 #h.to_sql('data', engine1, schema='cftc', if_exists='append', index=False)
 
-print(h)

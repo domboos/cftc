@@ -9,7 +9,7 @@ import numpy as np
 import sqlalchemy as sq
 import statsmodels.api as sm
 from datetime import datetime
-from scipy.optimize import minimize
+import scipy.optimize as op
 
 from pandas.io.sql import SQLTable
 
@@ -45,6 +45,8 @@ def gets(engine, type, data_tab='data', desc_tab='cot_desc', series_id=None, bb_
         series_id = str(series_id.values[0][0])
     else:
         series_id = str(series_id)
+
+    print(series_id)
 
     h_1 = " WHERE px_date >= '" + str(start_dt) + "' AND px_date <= '" + str(end_dt) + "' AND px_id = "
     h_2 = series_id + constr + " order by px_date"
@@ -96,11 +98,14 @@ def getexposure(type_of_trader, norm, bb_tkr, start_dt='1900-01-01', end_dt='210
         exposure = pd.DataFrame(index=df_merge.index)
         exposure['qty'] = (df_merge.qty_y * df_merge.qty_x).values
 
-    else:
-        print('wrong type_of_exposure')
+    elif norm == 'number':
+        exposure = pos.copy()
+        print('--- NUMBER ---')
 
     midx = pd.MultiIndex(levels=[['cftc'], ['net_specs']], codes=[[0], [0]])
     exposure.columns = midx
+
+    print(exposure.to_string())
 
     return exposure
 
@@ -170,7 +175,10 @@ def getGamma(maxlag, regularization='d1', gammatype='sqrt', gammapara=1, naildow
             gamma[i, i] = np.log(1 + gammapara * i / maxlag)
 
         elif gammatype == 'sqrt':
-            gamma[i, i] = np.sqrt(i + 1)
+            # original is 1
+            print(gammapara)
+            print(type(gammapara))
+            gamma[i, i] = np.sqrt(i + gammapara)
 
     # standardize sum of diagonal values to 1
     gsum = gamma.diagonal(0).sum()
@@ -235,13 +243,14 @@ def press(a, _y, _x, g):
     iH = np.identity(n) - _x @ np.linalg.inv(np.transpose(_x) @ _x + a * a * np.transpose(g) @ g) @ np.transpose(_x)
     B = np.diag(1 / np.diag(iH))
     BiHy = B @ iH @ _y
-    return 0.000001 * np.transpose(BiHy) @ BiHy / n
+    k = 0.000001 * np.transpose(BiHy) @ BiHy / n
+    return k[0][0]
 
 
 def press_2(a1, _y, _x, g1, g2):
     # A is an array
     # G are Gamma matrices
-
+    a1 = np.squeeze(a1)
     print(a1.shape)
 
     g = a1[0] * g1 + a1[1] * g2
@@ -268,26 +277,20 @@ def getAlpha(alpha_type, y, x=None, gma=None, start=None):
         scaling factor for gamma matrix
 
     """
-    bnds = [(1, None)]
     if alpha_type == 'std':
         alpha = y.std()[0]
     elif alpha_type == 'var':
         alpha = y.var()[0]
     elif alpha_type == 'loocv':
         press1 = lambda z, z1=y.values, z2=x, z3=gma: press(z, z1, z2, z3)
-        res = minimize(press1, x0=start, bounds=bnds, method='Nelder-Mead', options={'disp': True,
+        res = op.minimize(press1, x0=start, method='Nelder-Mead', options={'disp': True,
                         'maxiter': 500, 'xatol': 0.01, 'fatol': 0.1})
-        alpha = res.x
-    elif alpha_type == 'loocv':
-        press1 = lambda z, z1=y.values, z2=x, z3=gma: press(z, z1, z2, z3)
-        res = minimize(press1, x0=start, bounds=bnds, method='Nelder-Mead', options={'disp': True,
-                        'maxiter': 500, 'xatol': 0.01, 'fatol': 0.1})
-        alpha = res.x
+        alpha = abs(res.x)
     elif alpha_type == 'gcv':
         gcv1 = lambda z, z1=y.values, z2=x, z3=gma: gcv(z, z1, z2, z3)
-        res = minimize(gcv1, x0=start, bounds=bnds, method='Nelder-Mead', options={'disp': True,
+        res = op.minimize(gcv1, x0=start, method='Nelder-Mead', options={'disp': True,
                         'maxiter': 500, 'xatol': 0.01, 'fatol': 0.1})
-        alpha = res.x
+        alpha = abs(res.x)
     else:
         alpha = 1
     print(alpha)
@@ -311,19 +314,20 @@ def getGammaOpt(y, x=None, gma1=None, gma2=None, start=None):
     """
     #bounds=bnds,
     press1 = lambda a1, z1=y.values, z2=x, z3=gma1, z4=gma2: press_2(a1, z1, z2, z3, z4)
-    res = minimize(press_2, args=(y.values, x, gma1, gma2), x0=start)
+    res = op.minimize(press_2, args=(y.values, x, gma1, gma2), x0=start, method='powell')
 
-    alpha = res.x
+    alpha = np.squeeze(res.x)
 
     print(alpha)
 
-    return alpha[0]*gma1+alpha[1]*gma2
+    return alpha[0]*gma1+alpha[1]*gma2, alpha
 
 
 def merge_pos_ret(pos, ret, diff):
     if diff:
         cr = pd.merge(pos, ret.iloc[:, :-1], how='inner', left_index=True, right_index=True).diff().dropna()
     else:   #level
+        print('---------------')
         cr = pd.merge(pos, ret.iloc[:, :-1], how='inner', left_index=True, right_index=True).dropna()
     return cr
 
@@ -332,6 +336,7 @@ def merge_pos_ret(pos, ret, diff):
 
 # refreshing model view and fetching
 alpha = 100
+s0 = np.array([100, 100])
 conn = engine1.connect()
 conn.execute('REFRESH MATERIALIZED VIEW cftc.vw_model_desc')
 model_list = pd.read_sql_query("SELECT * FROM cftc.vw_model_desc WHERE max_date IS NULL ORDER BY bb_tkr, bb_ykey",
@@ -391,25 +396,23 @@ for idx, model in model_list.iterrows():
             y0 = cr['cftc'].loc[w_start:w_end, :]
 
         #try:
-            if model.gamma_type == 'new':
-                gamma1 = getGamma(maxlag=model.lookback, regularization=model.regularization, gammatype='flat',
-                                 gammapara=model.gamma_para, naildownvalue0=model.naildown_value0,
-                                 naildownvalue1=model.naildown_value1)
-                gamma2 = getGamma(maxlag=model.lookback, regularization=model.regularization, gammatype='sqrt',
-                                 gammapara=model.gamma_para, naildownvalue0=model.naildown_value0,
-                                 naildownvalue1=model.naildown_value1)
-                s0 = np.array([100,100])
-                print(s0.shape)
-                gamma_tmp = getGammaOpt(y=y0, x=x0, gma1=gamma1, gma2=gamma2, start=s0)
-            else:
-                alpha = getAlpha(alpha_type=model.alpha_type, y=y0, x=x0, gma=gamma, start=alpha) * model.alpha
-                gamma_tmp = gamma * alpha
-        #except:
-            print(y0)
-            print(x0.shape)
-            print(gamma.shape)
-            print(model.lookback)
+        if model.gamma_type == 'new3':
+            gamma1 = getGamma(maxlag=model.lookback, regularization=model.regularization, gammatype='linear',
+                            gammapara=model.gamma_para, naildownvalue0=model.naildown_value0,
+                            naildownvalue1=model.naildown_value1)
+            gamma2 = getGamma(maxlag=model.lookback, regularization=model.regularization, gammatype='flat',
+                            gammapara=model.gamma_para, naildownvalue0=model.naildown_value0,
+                            naildownvalue1=model.naildown_value1)
+            gamma_tmp, s0 = getGammaOpt(y=y0, x=x0, gma1=gamma1, gma2=gamma2, start=s0)
+        else:
             alpha = getAlpha(alpha_type=model.alpha_type, y=y0, x=x0, gma=gamma, start=alpha) * model.alpha
+            gamma_tmp = gamma * alpha
+        #except:
+        #   print(y0)
+        #   print(x0.shape)
+        #   print(gamma.shape)
+        #   print(model.lookback)
+        #   alpha = getAlpha(alpha_type=model.alpha_type, y=y0, x=x0, gma=gamma, start=alpha) * model.alpha
 
         y = np.concatenate((y0, np.zeros((gamma.shape[0], 1))))
         x = np.concatenate((x0, gamma_tmp), axis=0)
