@@ -35,7 +35,11 @@
 		"ms-ossdata.vscode-postgresql"
 	],
 	"settings": {
-		"terminal.integrated.shell.linux": "/bin/bash"
+		"terminal.integrated.shell.linux": "/bin/bash",
+		"python.linting.enabled": true,
+		"python.linting.pylintEnabled": true,
+		"python.linting.pylintPath": "/opt/conda/bin/pylint",
+		"python.pythonPath": "/opt/conda/bin/python",
 	},
 	"postCreateCommand": "bash .devcontainer/scripts/post_create_script.sh",
 }
