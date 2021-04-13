@@ -89,7 +89,7 @@ def getexposure(type_of_trader, norm, bb_tkr, start_dt='1900-01-01', end_dt='210
     midx = pd.MultiIndex(levels=[['cftc'], ['net_specs']], codes=[[0], [0]])
     exposure.columns = midx
 
-    print(exposure.to_string())
+    # print(exposure.to_string())
 
     return exposure
 

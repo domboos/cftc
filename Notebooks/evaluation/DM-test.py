@@ -2,8 +2,9 @@
 
 import pandas as  pd
 import numpy as np
+import os 
+os.chdir('/home/jovyan/work/')
 from cfunctions import *
-
 print(engine1)
 
 
@@ -86,22 +87,22 @@ def dm_test(actual_lst, pred1_lst, pred2_lst, h = 1, crit="MSE", power = 2):
             if comp.match(s) is None:
                 return s.isdigit()
             return True
-        for actual, pred1, pred2 in zip(actual_lst, pred1_lst, pred2_lst):
-            is_actual_ok = compiled_regex(str(abs(actual)))
-            is_pred1_ok = compiled_regex(str(abs(pred1)))
-            is_pred2_ok = compiled_regex(str(abs(pred2)))
-            if (not (is_actual_ok and is_pred1_ok and is_pred2_ok)):  
-                msg = "An element in the actual_lst, pred1_lst or pred2_lst is not numeric."
-                rt = -1
-                return (rt,msg)
-        return (rt,msg)
+        # for actual, pred1, pred2 in zip(actual_lst, pred1_lst, pred2_lst):
+        #     is_actual_ok = compiled_regex(str(abs(actual)))
+        #     is_pred1_ok = compiled_regex(str(abs(pred1)))
+        #     is_pred2_ok = compiled_regex(str(abs(pred2)))
+        #     if (not (is_actual_ok and is_pred1_ok and is_pred2_ok)):  
+        #         msg = "An element in the actual_lst, pred1_lst or pred2_lst is not numeric."
+        #         rt = -1
+        #         return (rt,msg)
+        # return (rt,msg)
     
     # Error check
-    error_code = error_check()
-    # Raise error if cannot pass error check
-    if (error_code[0] == -1):
-        raise SyntaxError(error_code[1])
-        return
+    # error_code = error_check()
+    # # Raise error if cannot pass error check
+    # if (error_code[0] == -1):
+    #     raise SyntaxError(error_code[1])
+    #     return
     # Import libraries
     from scipy.stats import t
     import collections
@@ -177,11 +178,9 @@ def dm_test(actual_lst, pred1_lst, pred2_lst, h = 1, crit="MSE", power = 2):
 
 #%%
 model_types = pd.read_sql_query("select * from cftc.model_type_desc",engine1)
-model_type1 = 82 #100
-model_type2 = 76 #95 #76
+model_type1 = 137#82 #100
+model_type2 = 93#76 #95 #76
 # %%
-
-
 models1 = pd.read_sql_query(f" Select * from cftc.model_desc where model_type_id = {int(model_type1)}", engine1).set_index('model_id')
 models2 = pd.read_sql_query(f" Select * from cftc.model_desc where model_type_id = {int(model_type2)}", engine1).set_index('model_id')
 oot = pd.read_sql_query("SELECT * FROM CFTC.order_of_things order by ranking asc",engine1)
@@ -203,9 +202,10 @@ for bb_tkr in oot.bb_tkr:
     df = pd.merge(exposure[['diffs']],forecast1[['fcast1']],left_index = True, right_index = True)
     df = pd.merge(df,forecast2[['fcast2']],left_index = True, right_index = True)
     df = df.dropna()
-
+    
     dm = dm_test(actual_lst = df.diffs.values, pred1_lst= df.fcast1.values, pred2_lst = df.fcast2.values, h = 1, crit="MSE", power = 2)
     res.loc[bb_tkr,'DM-Stat'] = dm[0]
+    
     res.loc[bb_tkr,'pvalue'] = dm[1]
     res.to_excel(f"DM_{model_type1}_{model_type2}_v2.xlsx")
 # %%

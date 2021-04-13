@@ -1,0 +1,6 @@
+README.md
+setup.py
+cftc_functions.egg-info/PKG-INFO
+cftc_functions.egg-info/SOURCES.txt
+cftc_functions.egg-info/dependency_links.txt
+cftc_functions.egg-info/top_level.txt

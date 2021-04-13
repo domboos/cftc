@@ -1,3 +1,24 @@
 {
-    "python.pythonPath": "/opt/conda/bin/python"
+    "python.formatting.provider": "black",
+    "python.testing.pytestArgs": [
+        "."
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.nosetestsEnabled": false,
+    "python.testing.pytestEnabled": true,
+    "sqltools.connections": [
+        {
+            "pgOptions": {
+                "ssl": true
+            },
+            "previewLimit": 50,
+            "server": "iwa-backtest.postgres.database.azure.com",
+            "port": 5432,
+            "askForPassword": true,
+            "driver": "PostgreSQL",
+            "name": "Patent",
+            "database": "postgres",
+            "username": "grbi@iwa-backtest"
+        }
+    ]
 }

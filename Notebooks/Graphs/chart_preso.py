@@ -10,7 +10,9 @@ from bokeh.palettes import brewer
 from bokeh.plotting import figure, output_file, show
 from bokeh.io import export_png
 
-file = 'C:\\Users\\bood\\switchdrive\\Tracking Traders\\04_Abbildungen\\Chart_Trend_Signals.xlsx'
+#if coding env is VSC use: 
+file = './data/Chart_Trend_Signals.xlsx'
+#file = 'C:\\Users\\bood\\switchdrive\\Tracking Traders\\04_Abbildungen\\Chart_Trend_Signals.xlsx'
 data_chart_1 = pd.read_excel(file, sheet_name='mom', index_col=0)
 print(data_chart_1)
 
@@ -40,7 +42,8 @@ s7 = figure(background_fill_color="#fafafa", y_range=(-0.2, 5))
 s7.line(data_chart_1.index, data_chart_1.iloc[:, 2]*100, alpha=0.8, line_dash="dotdash",
         line_color="#d95b43", line_width=3, legend_label='smom(60,5)')
 
-file = 'C:\\Users\\bood\\switchdrive\\Tracking Traders\\04_Abbildungen\\Chart_Trend_Signals2.xlsx'
+file = './data/Chart_Trend_Signals2.xlsx'
+# file = 'C:\\Users\\bood\\switchdrive\\Tracking Traders\\04_Abbildungen\\Chart_Trend_Signals2.xlsx'
 
 
 data_chart_3 = pd.read_excel(file, sheet_name='mom', index_col=0)
