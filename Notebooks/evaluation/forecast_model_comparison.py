@@ -3,9 +3,8 @@ import pandas as pd
 import numpy as np 
 import statsmodels.api as sm
 from datetime import datetime
-import os 
-os.chdir('/home/jovyan/work/')
-from cfunctions import *
+import os
+from functions_eval import engine1, getDates_of_MM, getDirection, getDirection, getData, getexposure
 import sys
 #%%
 #For overview
@@ -32,48 +31,50 @@ def empirical_vals2(model1_type_id,model2_type_id,bb_tkr):
         del empirical_vals['net_specs']
     return empirical_vals
 
-
-def empirical_vals1(model_type_id,bb_tkr):
-    #* for Zarnowitz1Models
-    #* Already returns diff() values for empirical values
-    model_types = pd.read_sql_query(f"SELECT * from cftc.model_type_desc where model_type_id IN ({model_type_id})", engine1).set_index('model_type_id')
-
-    empirical_vals = getexposure(type_of_trader = model_types.loc[model_type_id,'cot_type'], norm = model_types.loc[model_type_id,'cot_norm'], bb_tkr = bb_tkr)
-    empirical_vals.columns = empirical_vals.columns.droplevel(0)
-    empirical_vals['diff'] = empirical_vals.net_specs.diff()
-    
-    del empirical_vals['net_specs']
-    return empirical_vals
 #%%% #* Mincer-Zarnowitz Regression for 1 Model and Combined
-def Zarnowitz1Model(model_type_id):
-    model_type_id = 93
-    oot = pd.read_sql_query("SELECT * FROM cftc.order_of_things",engine1)
-    bb_tkrs = list(oot.bb_tkr)
 
-    result = pd.DataFrame(index = bb_tkrs, columns = ['model_type_id','intercept','tstat_intercept','pval_intercept','beta','tstat_beta','pval_beta','rsquared'])
-    result['model_type_id'] = model_type_id
-
-    for bb_tkr in bb_tkrs:
-        print(bb_tkr)
-        fcast = getForecast(model_type=model_type_id,bb_tkr= bb_tkr)
-        emp_vals = empirical_vals1(model_type_id=model_type_id, bb_tkr= bb_tkr)
-        df = pd.merge(fcast,emp_vals,how = 'left', on = 'px_date')
-        df = df.dropna()
+def MZ1Model(model_type_id):
+    
+    bb_tkrs = pd.read_sql_query(f"SELECT * FROM cftc.order_of_things",engine1).bb_tkr # get bb_tkrs
+    model_types = pd.read_sql_query("SELECT * from cftc.model_type_desc", engine1) # get model_ids
+    
+    # set index to model_type_id if not already is
+    if model_types.index.name != 'model_type_id': 
+        model_types = model_types.set_index('model_type_id')
         
-        #* Mincer Zarnowitz Regression:y-x = a + (b-1)x
-        y = (df['diff'] - df['qty']).values
-        x = sm.add_constant(df['qty']).values
-        mod_MZ = sm.OLS(y,x).fit()
-        # print(mod_MZ.summary())
+    # get models with the right model_type_ids: 
+    models = pd.read_sql_query(f" Select * from cftc.model_desc where model_type_id = {int(model_type_id)}", engine1).set_index('model_id')
 
-        #wirte to results:
-        result.loc[bb_tkr,'intercept'] =  mod_MZ.params[0] 
-        result.loc[bb_tkr,'tstat_intercept'] = mod_MZ.tvalues[0]
-        result.loc[bb_tkr,'pval_intercept'] =  mod_MZ.pvalues[0] 
-        result.loc[bb_tkr,'beta'] =  mod_MZ.params[1] 
-        result.loc[bb_tkr,'tstat_beta'] = mod_MZ.tvalues[1]
-        result.loc[bb_tkr,'pval_beta'] =  mod_MZ.pvalues[1] 
-        result.loc[bb_tkr,'rsquared'] = mod_MZ.rsquared 
+    result = pd.DataFrame( index =list(bb_tkrs))
+    
+    for i in models.index: 
+        print(models.loc[i,'bb_tkr']) # print bb_tkr
+        df_sample = getData(model_id = i,model_type_id= model_type_id,bb_tkr = models.loc[i,'bb_tkr'], model_types = model_types,start_date = None, end_date = None)
+        #Might have no data for pre defined period
+        if df_sample.shape[0] == 0:
+            continue
+
+        #* Mincer Zarnowitz Regression:y-x = a + (b-1)x
+        y = (df_sample['cftc'] - df_sample['forecast']).values
+        x = sm.add_constant(df_sample['forecast']).values
+        mod_MZ = sm.OLS(y,x).fit()
+        del y
+                
+        y = df_sample['cftc'].values
+        mod_fit = sm.OLS(y,x).fit()
+        # print(mod_fit.summary())
+                
+        
+
+        result.loc[models.loc[i,'bb_tkr'],'rsquared'] = mod_fit.rsquared 
+        result.loc[models.loc[i,'bb_tkr'],'intercept'] =  mod_fit.params[0] 
+        result.loc[models.loc[i,'bb_tkr'],'tstat_intercept'] = mod_fit.tvalues[0]
+        result.loc[models.loc[i,'bb_tkr'],'pval_intercept'] =  mod_fit.pvalues[0] 
+        result.loc[models.loc[i,'bb_tkr'],'beta'] =  mod_fit.params[1] 
+        result.loc[models.loc[i,'bb_tkr'],'tstat_beta=0'] = mod_MZ.tvalues[1]
+        result.loc[models.loc[i,'bb_tkr'],'pval_beta=0'] =  mod_MZ.pvalues[1]
+        result.loc[models.loc[i,'bb_tkr'],'nobs'] =  mod_MZ.nobs
+        
         
     return result
 
@@ -82,7 +83,7 @@ def Zarnowitz2Models(model1_type_id,model2_type_id):
     oot = pd.read_sql_query("SELECT * FROM cftc.order_of_things",engine1)
     bb_tkrs = list(oot.bb_tkr)
 
-    result = pd.DataFrame(index = bb_tkrs, columns = ['m1','m2','beta_m1','beta_m2','tstat_m1','pval_m1','tstat_m2','pval_m2','rsquared'])
+    result = pd.DataFrame(index = bb_tkrs, columns = ['m1','m2','beta_m1','beta_m2','tstat_m1','pval_m1','tstat_m2','pval_m2','rsquared' ,'nobs'])
 
     for bb_tkr in bb_tkrs:
         print(bb_tkr)
@@ -106,6 +107,7 @@ def Zarnowitz2Models(model1_type_id,model2_type_id):
         result.loc[bb_tkr,'tstat_m2'] = mod_MZ.tvalues[2] #M2
         result.loc[bb_tkr,'pval_m2'] =  mod_MZ.pvalues[2] #pval M2
         result.loc[bb_tkr,'rsquared'] = mod_MZ.rsquared #r-squared
+        result.loc[bb_tkr,'nobs'] = mod_MZ.nobs #r-squared
     
     result['m1'] = model1_type_id
     result['m2'] = model2_type_id
@@ -118,9 +120,10 @@ df = res1.append(res2)
 df.to_excel('forecast_comparison_v2.xlsx')
 
 #%% #* Openinterest:
+
 resboth = Zarnowitz2Models(model1_type_id = 93,model2_type_id= 137)
-res93 = Zarnowitz1Model(model_type_id= 93)
-res137 = Zarnowitz1Model(model_type_id= 137)
+res93 = MZ1Model(model_type_id= 93)
+res137 = MZ1Model(model_type_id= 137)
 
 os.chdir('/home/jovyan/work/reports/results')
 writer = pd.ExcelWriter('ZarnowitzRegressions_93_137.xlsx', engine='xlsxwriter')
@@ -129,3 +132,10 @@ res93.to_excel(writer, sheet_name = 'MZ_93')
 res137.to_excel(writer, sheet_name='MZ_137')
 writer.save()
 os.chdir('/home/jovyan/work/')
+
+# %%
+res_mz_82 = MZ1Model(model_type_id= 82)
+# %%
+res_mz_82.to_excel('mz1_82_v2.xlsx')
+
+# %%

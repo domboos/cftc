@@ -178,8 +178,8 @@ def dm_test(actual_lst, pred1_lst, pred2_lst, h = 1, crit="MSE", power = 2):
 
 #%%
 model_types = pd.read_sql_query("select * from cftc.model_type_desc",engine1)
-model_type1 = 137#82 #100
-model_type2 = 93#76 #95 #76
+model_type1 = 82#82 #100
+model_type2 = 76#76 #95 #76
 # %%
 models1 = pd.read_sql_query(f" Select * from cftc.model_desc where model_type_id = {int(model_type1)}", engine1).set_index('model_id')
 models2 = pd.read_sql_query(f" Select * from cftc.model_desc where model_type_id = {int(model_type2)}", engine1).set_index('model_id')
@@ -209,7 +209,9 @@ for bb_tkr in oot.bb_tkr:
     res.loc[bb_tkr,'pvalue'] = dm[1]
     res.to_excel(f"DM_{model_type1}_{model_type2}_v2.xlsx")
 # %%
-res_100_95 = res.copy()
+# res_137_93 = res.copy()
+res_82_76 = res.copy()
+
 # %%
 res_82_76 = res.copy()
 
