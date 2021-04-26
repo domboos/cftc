@@ -138,6 +138,26 @@ results['76_length_like_MM'] = getR2results(model_type_id= 76,cftcVariableName =
 results['82_length_like_MM'] = getR2results(model_type_id= 82,cftcVariableName =cftcVariableName ,fcastVariableName= fcastVariableName,note = '82_length_like_MM',timespan= 'MM')
 
 
+#%% #* Misc R2 Results
+model_list = [76,82,95,100,137,93,133,134,135,117,118,119,136]
+cftcVariableName = 'cftc' #* OR cftc_adj
+fcastVariableName = 'forecast' #*OR 'forecast_adj'
+avgs = pd.DataFrame(index = model_list, columns = ['avg_r2'])
+r2 = pd.DataFrame()
+for item in model_list:
+    df_r2_temp = getR2results(model_type_id= item,cftcVariableName = cftcVariableName,fcastVariableName= fcastVariableName,note =str(item) ,timespan= None)
+    r2 = r2.append(df_r2_temp)
+    avgs.loc[item,'avg_r2'] = (df_r2_temp.r2 * df_r2_temp.nobs).sum() / df_r2_temp.nobs.sum()
+
+
+os.chdir('/home/jovyan/work/reports/results')
+writer = pd.ExcelWriter(f'r2_results_referenced_in_paper.xlsx', engine='xlsxwriter')
+avgs.to_excel(writer,sheet_name='R2_avg')
+r2.to_excel(writer,sheet_name='r2')
+writer.save()
+os.chdir('/home/jovyan/work/')
+    
+
 
 #%% Write above Results to excel
 only_r2s = pd.DataFrame()
