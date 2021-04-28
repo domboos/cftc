@@ -4,8 +4,15 @@ import numpy as np
 import statsmodels.api as sm
 from datetime import datetime
 import os
+#Model Analysis:
+import matplotlib.pyplot as plt
+from statsmodels.compat import lzip
+from statsmodels.stats.diagnostic import het_white
+
 from functions_eval import engine1, getDates_of_MM, getDirection, getDirection, getData, getexposure
 import sys
+
+
 #%%
 #For overview
 model_types = pd.read_sql_query("SELECT * from cftc.model_type_desc where model_type_id IN (82,76,95,100)", engine1)
@@ -65,13 +72,15 @@ def MZ1Model(model_type_id):
         # print(mod_fit.summary())
                 
         
+        0.031/5.40595521e-02 * 40.757
+        mod_fit.bse[1]/ mod_fit.HC3_se[1]*mod_fit.tvalues[1]
 
         result.loc[models.loc[i,'bb_tkr'],'rsquared'] = mod_fit.rsquared 
         result.loc[models.loc[i,'bb_tkr'],'intercept'] =  mod_fit.params[0] 
-        result.loc[models.loc[i,'bb_tkr'],'tstat_intercept'] = mod_fit.tvalues[0]
+        result.loc[models.loc[i,'bb_tkr'],'tstat_intercept'] = mod_fit.bse[0]/ mod_fit.HC3_se[0]*mod_fit.tvalues[0]
         result.loc[models.loc[i,'bb_tkr'],'pval_intercept'] =  mod_fit.pvalues[0] 
         result.loc[models.loc[i,'bb_tkr'],'beta'] =  mod_fit.params[1] 
-        result.loc[models.loc[i,'bb_tkr'],'tstat_beta=0'] = mod_MZ.tvalues[1]
+        result.loc[models.loc[i,'bb_tkr'],'tstat_beta=0'] = mod_MZ.bse[1]/ mod_MZ.HC3_se[1]* mod_MZ.tvalues[1]
         result.loc[models.loc[i,'bb_tkr'],'pval_beta=0'] =  mod_MZ.pvalues[1]
         result.loc[models.loc[i,'bb_tkr'],'nobs'] =  mod_MZ.nobs
         
@@ -102,11 +111,11 @@ def Zarnowitz2Models(model1_type_id,model2_type_id):
 
         result.loc[bb_tkr,'beta_m1'] =  mod_MZ.params[1] # beta M1
         result.loc[bb_tkr,'beta_m2'] =  mod_MZ.params[2] # beta M2
-        result.loc[bb_tkr,'tstat_m1'] = mod_MZ.tvalues[1] #M1
+        result.loc[bb_tkr,'tstat_m1']= mod_MZ.bse[1]/ mod_MZ.HC3_se[1]* mod_MZ.tvalues[1] #M1
         result.loc[bb_tkr,'pval_m1'] =  mod_MZ.pvalues[1] #pval M1
-        result.loc[bb_tkr,'tstat_m2'] = mod_MZ.tvalues[2] #M2
-        result.loc[bb_tkr,'pval_m2'] =  mod_MZ.pvalues[2] #pval M2
-        result.loc[bb_tkr,'rsquared'] = mod_MZ.rsquared #r-squared
+        result.loc[bb_tkr,'tstat_m2']= mod_MZ.bse[2]/ mod_MZ.HC3_se[2]* mod_MZ.tvalues[2] #M2
+        result.loc[bb_tkr,'pval_m2'] = mod_MZ.pvalues[2] #pval M2
+        result.loc[bb_tkr,'rsquared']= mod_MZ.rsquared #r-squared
         result.loc[bb_tkr,'nobs'] = mod_MZ.nobs #r-squared
     
     result['m1'] = model1_type_id
@@ -117,7 +126,12 @@ def Zarnowitz2Models(model1_type_id,model2_type_id):
 res1 = Zarnowitz2Models(model1_type_id = 76,model2_type_id= 82)
 res2 = Zarnowitz2Models(model1_type_id = 95,model2_type_id= 100)
 df = res1.append(res2)
-df.to_excel('forecast_comparison_v2.xlsx')
+df.to_excel('forecast_comparison_28-04-2021.xlsx')
+#%%
+# %%
+res_mz_82 = MZ1Model(model_type_id= 82)
+res_mz_82.to_excel('mz1_82_v3.xlsx')
+
 
 #%% #* Openinterest:
 
@@ -132,10 +146,3 @@ res93.to_excel(writer, sheet_name = 'MZ_93')
 res137.to_excel(writer, sheet_name='MZ_137')
 writer.save()
 os.chdir('/home/jovyan/work/')
-
-# %%
-res_mz_82 = MZ1Model(model_type_id= 82)
-# %%
-res_mz_82.to_excel('mz1_82_v2.xlsx')
-
-# %%
