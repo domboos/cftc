@@ -13,7 +13,7 @@ import seaborn as sns
 
 
 os.chdir('C:\\Users\\grbi\\PycharmProjects\\cftc_neu')
-from cftc_functions_nightly_betas import *
+from cfunctions import *
 
 os.chdir('C:\\Users\\grbi\\PycharmProjects\\cftc_neu\\results')
 nonc_expo_sf = pd.read_excel('nonc_exposure.xlsx',sheet_name ='R2_and_scalingFactor',index_col =3)

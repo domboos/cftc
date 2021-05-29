@@ -22,7 +22,7 @@ else:
     path = 'C:\\Users\\grbi\\PycharmProjects\\cftc_neu'
 
 os.chdir(path)
-from cftc_functions_nightly_betas import *
+from cfunctions import *
 
 os.chdir(path + '\\results')
 mm_expo_sf = pd.read_excel('mm_exposure.xlsx',sheet_name ='R2_and_scalingFactor',index_col =3)

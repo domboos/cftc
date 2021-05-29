@@ -4,16 +4,32 @@ Created on Tue Aug 25 19:10:00 2020
 
 @author: grbi
 """
-
 import numpy as np
-import sqlalchemy as sq
 import pandas as pd
+import sqlalchemy as sq
+import statsmodels.api as sm
+from datetime import datetime
+import scipy.optimize as op
+from cengine import cftc_engine
 
-engine1 = sq.create_engine(
-    "postgresql+psycopg2://grbi@iwa-backtest:grbizhaw@iwa-backtest.postgres.database.azure.com:5432/postgres")
+# crate engine
+engine1 = cftc_engine()
 
+# speed up db
+from pandas.io.sql import SQLTable
+
+def _execute_insert(self, conn, keys, data_iter):
+    print("Using monkey-patched _execute_insert")
+    data = [dict(zip(keys, row)) for row in data_iter]
+    conn.execute(self.table.insert().values(data))
+
+SQLTable._execute_insert = _execute_insert
+
+# functions
+# -------------------------------------------------------------------
 def gets(engine, type, data_tab='data', desc_tab='cot_desc', series_id=None, bb_tkr=None, bb_ykey='COMDTY',
          start_dt='1900-01-01', end_dt='2100-01-01', constr=None, adjustment=None):
+
     if constr is None:
         constr = ''
     else:
@@ -89,7 +105,7 @@ def getexposure(type_of_trader, norm, bb_tkr, start_dt='1900-01-01', end_dt='210
     midx = pd.MultiIndex(levels=[['cftc'], ['net_specs']], codes=[[0], [0]])
     exposure.columns = midx
 
-    # print(exposure.to_string())
+    print(exposure.to_string())
 
     return exposure
 
@@ -126,6 +142,12 @@ def getGamma(maxlag, regularization='d1', gammatype='sqrt', gammapara=1, naildow
     if regularization == 'd2':
         t -= 1
 
+    if gammatype == 'loo':
+        gammatype_tmp = 'loo'
+        gammatype = 'flat'
+    else:
+        gammatype_tmp = 'xxx'
+
     # loop creates gamma
     for i in range(0, t):
 
@@ -134,6 +156,10 @@ def getGamma(maxlag, regularization='d1', gammatype='sqrt', gammapara=1, naildow
 
         elif gammatype == 'flat':
             gamma[i, i] = 1
+
+        elif gammatype == 'flat1':
+            if i>0:
+                gamma[i, i] = 1
 
         elif gammatype == 'linear1':
             if i>0:
@@ -149,10 +175,14 @@ def getGamma(maxlag, regularization='d1', gammatype='sqrt', gammapara=1, naildow
             gamma[i, i] = np.log(1 + gammapara * i / maxlag)
 
         elif gammatype == 'sqrt':
-            gamma[i, i] = np.sqrt(i + 1)
+            # original is 1
+            print(gammapara)
+            print(type(gammapara))
+            gamma[i, i] = np.sqrt(i + gammapara)
 
     # standardize sum of diagonal values to 1
     gsum = gamma.diagonal(0).sum()
+    print(gsum)
     gamma[np.diag_indices_from(gamma)] /= gsum
 
     # default case
@@ -168,21 +198,24 @@ def getGamma(maxlag, regularization='d1', gammatype='sqrt', gammapara=1, naildow
         gamma[rowsm1, colsm1] = gamma.diagonal()[:-2]
 
         # fade out:
-        gamma[maxlag - 1, maxlag - 1] = naildownvalue1
-        gamma[maxlag - 1, maxlag] = -naildownvalue1
+        gamma[maxlag - 2, maxlag - 2] = naildownvalue1
+        gamma[maxlag - 2, maxlag-1] = -naildownvalue1
 
     # nail_down and delete zero rows
     gamma[gamma.shape[0] - 1, gamma.shape[1] - 1] = naildownvalue0
     gamma = np.delete(gamma, np.where(~gamma.any(axis=1))[0], axis=0)
 
+    if gammatype_tmp == 'loo':
+        gamma = np.delete(gamma, gammapara-1, 0)
+
     return gamma
 
 
-def getRetMat(ret, maxlag):
+def getRetMat(_ret, maxlag):
     """
     Parameters
     ----------
-    ret : pd.DataFrame()
+    ret_ : pd.DataFrame()
         log return series
     maxlag : int
         DESCRIPTION.
@@ -191,13 +224,13 @@ def getRetMat(ret, maxlag):
 
     # loop creates lagged returns in ret
     for i in range(0, maxlag):
-        ret['ret', str(i + 1).zfill(3)] = ret['ret', '000'].shift(i + 1)
+        _ret['ret', str(i + 1).zfill(3)] = _ret['ret', '000'].shift(i + 1)
 
-    ret = ret.iloc[maxlag:, :]  # delete the rows with nan due to its shift.
-    return ret
+    _ret = _ret.iloc[maxlag:, :maxlag+1]  # delete the rows with nan due to its shift.
+    return _ret
 
 
-def getAlpha(alpha_type, y):
+def getAlpha(alpha_type, y, x=None, gma=None, start=None):
     """
     Parameters
     ----------
@@ -214,19 +247,87 @@ def getAlpha(alpha_type, y):
     """
     if alpha_type == 'std':
         alpha = y.std()[0]
-
     elif alpha_type == 'var':
         alpha = y.var()[0]
-
+    elif alpha_type == 'loocv':
+        press1 = lambda z, z1=y.values, z2=x, z3=gma: press(z, z1, z2, z3)
+        res = op.minimize(press1, x0=start, method='Nelder-Mead', options={'disp': True,
+                        'maxiter': 500, 'xatol': 0.01, 'fatol': 0.1})
+        alpha = abs(res.x)
+    elif alpha_type == 'gcv':
+        gcv1 = lambda z, z1=y.values, z2=x, z3=gma: gcv(z, z1, z2, z3)
+        res = op.minimize(gcv1, x0=start, method='Nelder-Mead', options={'disp': True,
+                        'maxiter': 500, 'xatol': 0.01, 'fatol': 0.1})
+        alpha = abs(res.x)
     else:
         alpha = 1
+    print(alpha)
 
     return alpha
+
+
+def getGammaOpt(y, x=None, gma1=None, gma2=None, start=None):
+    """
+    Parameters
+    ----------
+    alpha_type : str()
+        either 'stdev',var'
+    y : np vector
+        independent variable
+
+    Returns
+    -------
+    alpha : value
+        scaling factor for gamma matrix
+
+    """
+    #bounds=bnds,
+    press1 = lambda a1, z1=y.values, z2=x, z3=gma1, z4=gma2: press_2(a1, z1, z2, z3, z4)
+    res = op.minimize(press_2, args=(y.values, x, gma1, gma2), x0=start, method='powell')
+
+    alpha = np.squeeze(res.x)
+
+    print(alpha)
+
+    return alpha[0]*gma1+alpha[1]*gma2, alpha
 
 
 def merge_pos_ret(pos, ret, diff):
     if diff:
         cr = pd.merge(pos, ret.iloc[:, :-1], how='inner', left_index=True, right_index=True).diff().dropna()
     else:   #level
+        print('---------------')
         cr = pd.merge(pos, ret.iloc[:, :-1], how='inner', left_index=True, right_index=True).dropna()
     return cr
+
+# press and it's variants
+def gcv(a, _y, _x, g):
+    n = np.shape(_y)[0]
+    iH = np.identity(n) - _x @ np.linalg.inv(np.transpose(_x) @ _x + a * a * np.transpose(g) @ g) @ np.transpose(_x)
+    iHy = iH @ _y
+    tiH = np.trace(iH)
+    return 0.000001 * np.transpose(iHy) @ iHy / (tiH * tiH)
+
+
+def press(a, _y, _x, g):
+    n = np.shape(_y)[0]
+    iH = np.identity(n) - _x @ np.linalg.inv(np.transpose(_x) @ _x + a * a * np.transpose(g) @ g) @ np.transpose(_x)
+    B = np.diag(1 / np.diag(iH))
+    BiHy = B @ iH @ _y
+    k = 0.000001 * np.transpose(BiHy) @ BiHy / n
+    return k[0][0]
+
+
+def press_2(a1, _y, _x, g1, g2):
+    # A is an array
+    # G are Gamma matrices
+    a1 = np.squeeze(a1)
+    print(a1.shape)
+
+    g = a1[0] * g1 + a1[1] * g2
+    print(a1)
+    n = np.shape(_y)[0]
+    iH = np.identity(n) - _x @ np.linalg.inv(np.transpose(_x) @ _x + np.transpose(g) @ g) @ np.transpose(_x)
+    B = np.diag(1 / np.diag(iH))
+    BiHy = B @ iH @ _y
+    return 0.000001 * np.transpose(BiHy) @ BiHy / n

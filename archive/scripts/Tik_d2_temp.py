@@ -8,7 +8,7 @@ import os
 import pandas as pd
 
 os.chdir('C:\\Users\\grbi\\PycharmProjects\\cftc_neu')
-from cftc_functions import *
+from cfunctions import *
 
 os.chdir('C:\\Users\\grbi\\PycharmProjects\\cftc_neu\\results')
 
