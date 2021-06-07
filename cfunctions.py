@@ -211,7 +211,7 @@ def getGamma(maxlag, regularization='d1', gammatype='sqrt', gammapara=1, naildow
     return gamma
 
 
-def getRetMat(_ret, maxlag):
+def getRetMat(_ret, maxlag, prefix='ret'):
     """
     Parameters
     ----------
@@ -224,7 +224,7 @@ def getRetMat(_ret, maxlag):
 
     # loop creates lagged returns in ret
     for i in range(0, maxlag):
-        _ret['ret', str(i + 1).zfill(3)] = _ret['ret', '000'].shift(i + 1)
+        _ret[prefix, str(i + 1).zfill(3)] = _ret[prefix, '000'].shift(i + 1)
 
     _ret = _ret.iloc[maxlag:, :maxlag+1]  # delete the rows with nan due to its shift.
     return _ret
@@ -331,3 +331,34 @@ def press_2(a1, _y, _x, g1, g2):
     B = np.diag(1 / np.diag(iH))
     BiHy = B @ iH @ _y
     return 0.000001 * np.transpose(BiHy) @ BiHy / n
+
+
+def getBeta(engine, model_id = None, model_type_id=None, bb_tkr=None, bb_ykey='COMDTY',
+            start_dt='1900-01-01', end_dt='2100-01-01', constr=None, expand=False, drop_beta_date=True):
+
+    if constr is None:
+        constr = ''
+    else:
+        constr = ' AND ' + constr
+
+    if model_id is None:
+        model_id = pd.read_sql_query("SELECT model_id FROM cftc.model_desc WHERE bb_tkr = '" + bb_tkr +
+                                     "' AND bb_ykey = '" + bb_ykey + "' AND model_type_id = '" + str(model_type_id) +
+                                     "'", engine1)
+        model_id = str(model_id.values[0][0])
+    else:
+        model_id = str(model_id)
+
+    h_1 = " WHERE px_date >= '" + str(start_dt) + "' AND px_date <= '" + str(end_dt) + "'"
+    h_1b = " WHERE beta_date >= '" + str(start_dt) + "' AND beta_date <= '" + str(end_dt) + "'"
+    h_2 = " AND model_id = " + model_id + constr + " order by px_date"
+    beta0 = pd.read_sql_query('SELECT px_date, return_lag, qty FROM cftc.beta' + h_1 + h_2, engine)
+    beta = beta0.pivot(index='px_date', columns='return_lag', values='qty')
+
+    if expand:
+        beta.index.rename(name='beta_date', inplace=True)
+        dates = pd.read_sql_query('SELECT * FROM cftc.beta_date' + h_1b, engine)
+        beta = pd.merge(left=dates, right=beta, on='beta_date', how='left').set_index(['px_date', 'beta_date']).dropna()
+        if drop_beta_date:
+            beta.index = beta.index.droplevel('beta_date')
+    return beta, model_id

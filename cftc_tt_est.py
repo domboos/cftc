@@ -72,7 +72,7 @@ for idx, model in model_list.iterrows():
 
     # fecthing cot, crate lagged returns and merge
     pos = getexposure(type_of_trader=model.cot_type, norm=model.cot_norm, bb_tkr=bb_tkr, bb_ykey=bb_ykey)
-    ret = getRetMat(ret_series, model.lookback)
+    ret = getRetMat(ret_series, model.lookback) # this is too long
     cr = merge_pos_ret(pos, ret, model.diff)
 
     for idx2, day in enumerate(cr.index[0:-(window + model.fit_lag)]):
