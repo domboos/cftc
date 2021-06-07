@@ -137,3 +137,5 @@ for idx, model in model_list.iterrows():
     alpha_all.to_sql('alpha', engine1, schema='cftc', if_exists='append', index=False)
     del gamma, cr, ret, pos
     print('---')
+
+    # hi
