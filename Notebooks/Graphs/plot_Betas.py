@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 
 
 import sqlalchemy as sq
-engine1 = sq.create_engine("postgresql+psycopg2://grbi@iwa-backtest:grbizhaw@iwa-backtest.postgres.database.azure.com:5432/postgres")
+from cfunctions import engine1
 #%%
 #get all models which are already calculated
 #TODO: Define model_id for the plot

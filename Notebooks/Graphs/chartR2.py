@@ -5,8 +5,8 @@ from bokeh.models import ColumnDataSource, FactorRange
 from bokeh.plotting import figure
 from bokeh.transform import dodge
 
-engine = sq.create_engine(
-    "postgresql+psycopg2://grbi@iwa-backtest:grbizhaw@iwa-backtest.postgres.database.azure.com:5432/postgres")
+from cfunctions import engine1 as engine
+
 
 arrays = [['Energy', 'Energy', 'Energy', 'Energy', 'Energy', 'Energy', 'Grains', 'Grains'],
           ['CL', 'XB', 'HO', 'NG', 'CO', 'QS', 'C', 'W']]
