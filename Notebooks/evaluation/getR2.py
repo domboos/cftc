@@ -235,17 +235,18 @@ if __name__ == '__main__':
     #     pickle.dump(result, handle, protocol=pickle.HIGHEST_PROTOCOL)
     #
     # df_r2_result = pd.DataFrame(index = result[list(result)[0]].index.values)
-    #
+    # df_nobs_result = pd.DataFrame(index=result[list(result)[0]].index.values)
     # for el in list(result):
     #     a = pd.DataFrame(index=result[el].index, columns=[f"{el}_r2"], data=result[el]['r2'].values)
     #     df_r2_result.loc[:,f"{el}_r2"] = a
+    #     a = pd.DataFrame(index=result[el].index, columns=[f"{el}_obs"], data=result[el]['nobs'].values)
+    #     df_nobs_result.loc[:, f"{el}_obs"] = a
     # df_r2_result.to_excel("r2_ComPumpSwap.xlsx")
+    # df_nobs_result.to_excel('obsForR2Calc.xlsx')
 
 
-    # todo: pull number of observations and starting and end dates of resp. TS.
-    # df_nobs_result = pd.DataFrame(index=result[list(result)[0]].index.values)
-    # for el in list(result):
-    #     df_nobs_result.loc[:, f"{el}_obs"] =
+
+
 
 
 
