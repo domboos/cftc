@@ -35,7 +35,8 @@ alpha = 100
 s0 = np.array([100, 100])
 conn = engine1.connect()
 conn.execute('REFRESH MATERIALIZED VIEW cftc.vw_model_desc')
-model_list = pd.read_sql_query("SELECT * FROM cftc.vw_model_desc WHERE max_date IS NULL ORDER BY bb_tkr, bb_ykey",
+model_list = pd.read_sql_query("SELECT * FROM cftc.vw_model_desc WHERE "
+                               "max_date IS NULL ORDER BY bb_tkr, bb_ykey",
                                engine1)
 conn.close()
 

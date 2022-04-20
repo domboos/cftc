@@ -43,7 +43,8 @@ def gets(engine, type, data_tab='data', desc_tab='cot_desc', series_id=None, bb_
             series_id = pd.read_sql_query("SELECT px_id FROM cftc.fut_desc WHERE bb_tkr = '" + bb_tkr +
                                           "' AND adjustment= '" + adjustment + "' AND bb_ykey = '" + bb_ykey +
                                           "' AND data_type = '" + type + "'", engine1)
-
+        print(desc_tab)
+        print(type)
         series_id = str(series_id.values[0][0])
     else:
         series_id = str(series_id)
@@ -105,6 +106,7 @@ def getexposure(type_of_trader, norm, bb_tkr, start_dt='1900-01-01', end_dt='210
     midx = pd.MultiIndex(levels=[['cftc'], ['net_specs']], codes=[[0], [0]])
     exposure.columns = midx
 
+    exposure.dropna(inplace=True)
     print(exposure.to_string())
 
     return exposure
@@ -182,7 +184,6 @@ def getGamma(maxlag, regularization='d1', gammatype='sqrt', gammapara=1, naildow
 
     # standardize sum of diagonal values to 1
     gsum = gamma.diagonal(0).sum()
-    print(gsum)
     gamma[np.diag_indices_from(gamma)] /= gsum
 
     # default case
@@ -251,14 +252,14 @@ def getAlpha(alpha_type, y, x=None, gma=None, start=None):
         alpha = y.var()[0]
     elif alpha_type == 'loocv':
         press1 = lambda z, z1=y.values, z2=x, z3=gma: press(z, z1, z2, z3)
-        res = op.minimize(press1, x0=start, method='Nelder-Mead', options={'disp': True,
-                        'maxiter': 500, 'xatol': 0.01, 'fatol': 0.1})
-        alpha = abs(res.x)
+        res = op.minimize(press1, x0=start, method='BFGS', tol=0.01, options={'disp': True,
+                        'maxiter': 20, 'gtol': 0.01, 'eps': 0.01})
+        alpha = res.x
     elif alpha_type == 'gcv':
         gcv1 = lambda z, z1=y.values, z2=x, z3=gma: gcv(z, z1, z2, z3)
         res = op.minimize(gcv1, x0=start, method='Nelder-Mead', options={'disp': True,
                         'maxiter': 500, 'xatol': 0.01, 'fatol': 0.1})
-        alpha = abs(res.x)
+        alpha = res.x
     else:
         alpha = 1
     print(alpha)
@@ -314,7 +315,7 @@ def press(a, _y, _x, g):
     iH = np.identity(n) - _x @ np.linalg.inv(np.transpose(_x) @ _x + a * a * np.transpose(g) @ g) @ np.transpose(_x)
     B = np.diag(1 / np.diag(iH))
     BiHy = B @ iH @ _y
-    k = 0.000001 * np.transpose(BiHy) @ BiHy / n
+    k = 0.000000000001 * np.transpose(BiHy) @ BiHy / n
     return k[0][0]
 
 
