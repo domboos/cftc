@@ -4,16 +4,27 @@ Created on Tue Aug 25 19:10:00 2020
 
 @author: grbi
 """
+import os
 import numpy as np
 import pandas as pd
 import sqlalchemy as sq
 import statsmodels.api as sm
 from datetime import datetime
 import scipy.optimize as op
-from cengine import cftc_engine
+from dotenv import load_dotenv
+
+# todo: if error is thrown do in Terminal: pip install python-dotenv
+load_dotenv()
+
+try:
+    conn = os.getenv('DATABASE_URL')
+    engine1 = sq.create_engine(conn)
+except Exception as e:
+    print('Connection to db could not be established, because DATABASE_URL is not defined')
+    print(e)
 
 # crate engine
-engine1 = cftc_engine()
+
 
 # speed up db
 from pandas.io.sql import SQLTable
@@ -74,8 +85,6 @@ def getexposure(type_of_trader, norm, bb_tkr, start_dt='1900-01-01', end_dt='210
     -------
     exposure : pd.DataFrame() with Multiindex (cftc,net_specs)
         Returns the exposure of the underlying position in USD (net_pos * fut_price * (Multiplier(?)) )
-
-
     """
     # Note:
     # - Exposure = mult * fut_adj_none * net_pos

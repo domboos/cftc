@@ -4,9 +4,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import os
-os.chdir('/home/jovyan/work/')
+# os.chdir('/home/jovyan/work/')
 from cfunctions import engine1,gets,getexposure
-
 
 # %% #* Functions for Graphs:
 #for xlim
@@ -18,13 +17,9 @@ def getDates(model_type_id):
     betas_per_model = pd.read_sql_query(f"SELECT * from cftc.beta where model_id = {model_id}",engine1)
     betas_per_model = betas_per_model.sort_values(['px_date','return_lag'], ascending = True)
 
-    dates_all = betas_per_model.px_date.drop_duplicates()
+    dates_all =  betas_per_model.px_date.drop_duplicates()
     return dates_all
 
-
-def getMeanBeta(betas_per_model):
-    mean_betas = betas_per_model.groupby('px_date').apply(lambda x: sum(x.qty * x.return_lag)/sum(x.qty))
-    return mean_betas
 
 
 def getRatioOIvsPosExposure(model_id,bb_tkr):
@@ -49,7 +44,7 @@ def getEvolutionofBetaPeak(betas_per_model):
     return n10_lowerb, n10_max, n10_upperb
 
 #*do plots: 
-def getPlots(model_type_id,showme):
+def getPlots(model_type_id:int,showme:str,saveFig:bool):
     """[Plots for one model Betas, and alpha]
 
     Args:
@@ -58,23 +53,19 @@ def getPlots(model_type_id,showme):
     """
 
     models = pd.read_sql_query(f"SELECT * from cftc.model_desc where model_type_id = {model_type_id}",engine1)
-    bb_tkrs = list(pd.read_sql_query(f"SELECT  bb_tkr from cftc.order_of_things order by ranking asc",engine1).bb_tkr)
+    bb_tkrs = list(pd.read_sql_query(f"SELECT  bb_tkr from cftc.order_of_things order by ranking asc", engine1).bb_tkr)
     #* general Layout
-    fig, axs = plt.subplots(8, 3, sharex=False, sharey= False ,figsize=(15,20))
-    fig.tight_layout()
-    fig.subplots_adjust(top=0.95)
-    sns.set(font_scale = 0.9)
-    sns.set_style('white')
-    sns.set_style('white', {'font.family':'serif', 'font.serif':'Times New Roman'})
+    fig, axs = plt.subplots(8, 3, figsize=(15, 20))
+    # fig.tight_layout()
+    # fig.subplots_adjust(top=0.95)
+    # sns.set(font_scale=0.9)
+    # sns.set_style('white')
+    # sns.set_style('white', {
+    #     'font.family': 'serif',
+    #     'font.serif': 'Times New Roman'
+    # }
+    #               )
 
-    # if showme == 'EvolutionOfBetaPeak':
-    #     # fig.suptitle(f"Evolution of Betas",fontsize=30)
-    #     # fig.text(0.5, 0.00, 'Date', ha='center', fontsize = 20)
-    #     # fig.text(0.00, 0.5, 'Return Lag', va='center', rotation='vertical', fontsize = 20)
-    # elif showme == 'ExposureAndOI':
-    #     fig.suptitle(f"Exposure vs. OI",fontsize=30)
-    #     fig.text(0.5, 0.00, 'Date', ha='center', fontsize = 20)
-    #     fig.text(0.00, 0.5, 'Exposure', va='center', rotation='vertical', fontsize = 20)
 
     plot_matrix = np.arange(24).reshape(8, -1)
     dates_all = getDates(model_type_id = model_type_id)
@@ -106,7 +97,7 @@ def getPlots(model_type_id,showme):
                 sns.lineplot(x = n10_lowerb.px_date,y = n10_lowerb.return_lag, ax=ax_curr, linewidth = 2, legend = False,color ='crimson')
                 sns.lineplot(x = n10_max.px_date,y = n10_max.return_lag, ax=ax_curr, linewidth = 2, legend = False,color ='cyan')
                 sns.lineplot(x = n10_upperb.px_date,y = n10_upperb.return_lag, ax=ax_curr, linewidth = 2, legend = False,color ='crimson')
-                ax_curr.set_xlim((dates_all[0],dates_all.iloc[-1]))
+                # ax_curr.set_xlim((dates_all[0],dates_all.iloc[-1]))
                 
             elif showme == 'ExposureAndOI':
                 ax2 = ax_curr.twinx()
@@ -114,7 +105,7 @@ def getPlots(model_type_id,showme):
                 # plot some data on each axis.
                 lns1 = ax_curr.plot(df.px_date,df.average, 'r')
                 lns2 = ax2.plot(df.px_date,df.oi,'b')
-                ax_curr.set_xlim((dates_all[0],dates_all.iloc[-1]))
+                # ax_curr.set_xlim((dates_all[0],dates_all.iloc[-1]))
                 # sns.lineplot(x = df.px_date,y = df.qty,ax=ax_curr, linewidth = 2, legend = False,color ='crimson')
                 # sns.lineplot(x = df.px_date,y = df.oi,ax=ax_curr, linewidth = 2, legend = False,color ='cyan')
             elif showme == 'RatioExposureOI': 
@@ -126,14 +117,20 @@ def getPlots(model_type_id,showme):
                 ax_curr.axhline(0, ls='--', color ='black')
                 
             elif showme == 'weighted_beta':
-                df = pd.read_sql_query(f"Select * from cftc.vw_wbeta2 where model_id = {model_id}",engine1)
+                query = ("SELECT px_date,model_id,sum(b.qty * b.return_lag) / sum(abs(b.qty)) average \n"
+                         "FROM cftc.beta b \n"
+                         f"where model_id = {model_id} \n"
+                         "group by px_date,model_id, b.model_id \n"
+                         "order by px_date asc")
+                df = pd.read_sql_query(query,engine1)
+
                 sns.lineplot(x = df.px_date,y = df.average,ax=ax_curr, linewidth = 2, legend = False,color ='darkblue')
-                ax_curr.set_xlim((dates_all[0],dates_all.iloc[-1]))
+                # # ax_curr.set_xlim((dates_all[0],dates_all.iloc[-1]))
                 ax_curr.axhline(0, ls='--', color ='black')
             elif showme == 'alpha': 
                 df = pd.read_sql_query(f"Select * from cftc.alpha where model_id = {model_id}",engine1)
                 sns.lineplot(x = df.px_date,y = df.qty,ax=ax_curr, linewidth = 2, legend = False,color ='darkblue')
-                ax_curr.set_xlim((dates_all[0],dates_all.iloc[-1]))
+                # ax_curr.set_xlim((dates_all[0],dates_all.iloc[-1]))
                 ax_curr.axhline(0, ls='--', color ='black')
             else:
                 print(f"wrong definition of showme: {showme}")
@@ -144,31 +141,19 @@ def getPlots(model_type_id,showme):
             ax_curr.set_title(title)
 
         # plt.xlim(dates_all[0],dates_all.iloc[-1])
+
+
     fig.delaxes(axs[7,2])
-    os.chdir('/home/jovyan/work/reports/figures/')
-    if showme == 'EvolutionOfBetaPeak':
-        plt.savefig(f"Evo_Beta_Model_type_{model_type_id}_final.png",dpi=100) #'./reports/figures/'+
-    elif showme == 'ExposureAndOI':
-        # lns = lns1 + lns2 
-        # print(lns)
-        # labs = [l.get_label() for l in lns]
-        # print(labs)
-        # fig.legend(lns,labs, bbox_to_anchor=(0.9, 0.15),fontsize = 20,frameon = False)
-        # fig.legend(labels=['Exposure','Open Interest'], bbox_to_anchor=(0.9, 0.15),fontsize = 20,frameon = False)
-        plt.savefig(f"expo_vs_OI_{model_type_id}_draft.png",dpi=100) #'./reports/figures/'+
-    elif showme == 'RatioExposureOI':
-        plt.savefig(f"Ratio_exp_to_oi_{model_type_id}_draft.png",dpi=100) #'./reports/figures/'+
-    elif showme == 'weighted_beta':
-        plt.savefig(f"weightedBeta_{model_type_id}.png",dpi=100) #'./reports/figures/'+
-    elif showme == 'alpha':
-        plt.savefig(f"alpha_{model_type_id}.png",dpi=100) #'./reports/figures/'+
-        
+    if saveFig == True:
+        plt.savefig(f"{showme}_model_type_id_{model_type_id}_draft.png",dpi=100) #'./reports/figures/'+
+
     plt.show()
-    os.chdir('/home/jovyan/work/')
+    # os.chdir('/home/jovyan/work/')
     
+def main():
+    # create Plots and Save:
+    for model_type_id in [100]: #
+        getPlots(model_type_id= model_type_id,showme='weighted_beta',saveFig=False)
 
-#%% #Do plots and save them
-for model_type_id in [95,82,100,76]: #
-    getPlots(model_type_id= model_type_id,showme='alpha')
-
-# %%
+if __name__ =='__main__':
+    main()
