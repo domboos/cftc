@@ -10,6 +10,7 @@ from cfunctions import engine1
 from matplotlib.ticker import FormatStrFormatter
 
 
+# TODO: Adjust Y-Axis in Plots (task for Mr. Boos)
 
 def getSpecificData(dates, model_type):
     models = pd.read_sql_query(f"SELECT * FROM cftc.model_desc where model_type_id ={model_type}", engine1)
@@ -182,11 +183,8 @@ def examplecreateFigurePerModelwithDates(model_type_ids=None):
 
 
 if __name__ == '__main__':
-    # modelTypeIds = [153, 152, 151, 150, 149, 148, 147, 146, 145]
-    # examplecreateFigurePerModelwithDates(modelTypeIds)
-    dates = ['2014-12-30','2018-12-25']
-    createFigurePerModelwithDates(model_type=149,dates=dates,savefig=True)
-
+    modelTypeIds = [153, 152, 151, 150, 149, 148, 147, 146, 145]
+    examplecreateFigurePerModelwithDates(modelTypeIds)
 
     # Example compareBetasOf2Models():
 
