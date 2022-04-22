@@ -60,7 +60,7 @@ def getResiduals(model_type_id:int, cftcVariableName:str, fcastVariableName:str,
         print(f"{tkr} , model_id: {i}")
 
         df_sample = getData(model_id=i, model_type_id=model_type_id, bb_tkr=tkr, model_types=model_types,
-                            start_date=fixedStartdate, end_date=fixedEndDate)
+                            start_date=fixedStartdate, end_date=fixedEndDate, engine1=engine1)
 
         if type_ == 'diff':
             residuals[tkr] = (df_sample.cftc - df_sample.forecast).values
@@ -120,14 +120,14 @@ def getR2results(model_type_id: int,
             enddate = dates_of_MM[dates_of_MM.bb_tkr == tkr].enddate.values[0]
             print(f"startdate: {startdate}; Enddate: {enddate}")
             df_sample = getData(model_id=i, model_type_id=model_type_id, bb_tkr=tkr, model_types=model_types,
-                                start_date=startdate, end_date=enddate)
+                                start_date=startdate, end_date=enddate, engine1=engine1)
 
         elif (fixedStartdate != None) | (fixedEndDate != None):
             df_sample = getData(model_id=i, model_type_id=model_type_id, bb_tkr=tkr, model_types=model_types,
-                                start_date=fixedStartdate, end_date=fixedEndDate)
+                                start_date=fixedStartdate, end_date=fixedEndDate, engine1=engine1)
         else:
             df_sample = getData(model_id=i, model_type_id=model_type_id, bb_tkr=tkr, model_types=model_types,
-                                start_date=None, end_date=None)
+                                start_date=None, end_date=None, engine1=engine1)
 
         # Might have no data for pre defined period
         if df_sample.shape[0] == 0:
@@ -226,23 +226,22 @@ def rSquaredComaprisonAcrossPeriods(model_type_ids: list, cftcVariableName: str,
 if __name__ == '__main__':
 
 
-    # ids =  [153, 152, 151, 150, 149, 148, 147, 146,145]
-    # cftcVariableName = 'cftc'
-    # fcastVariableName = 'forecast'
-    # result = rSquaredComaprisonAcrossPeriods(model_type_ids=ids, cftcVariableName=cftcVariableName, fcastVariableName=fcastVariableName)
-    #
-    # with open('r2Results145-153.pickle', 'wb') as handle:
-    #     pickle.dump(result, handle, protocol=pickle.HIGHEST_PROTOCOL)
-    #
-    # df_r2_result = pd.DataFrame(index = result[list(result)[0]].index.values)
-    # df_nobs_result = pd.DataFrame(index=result[list(result)[0]].index.values)
-    # for el in list(result):
-    #     a = pd.DataFrame(index=result[el].index, columns=[f"{el}_r2"], data=result[el]['r2'].values)
-    #     df_r2_result.loc[:,f"{el}_r2"] = a
-    #     a = pd.DataFrame(index=result[el].index, columns=[f"{el}_obs"], data=result[el]['nobs'].values)
-    #     df_nobs_result.loc[:, f"{el}_obs"] = a
-    # df_r2_result.to_excel("r2_ComPumpSwap.xlsx")
-    # df_nobs_result.to_excel('obsForR2Calc.xlsx')
+    ids =[131, 172, 153]
+    cftcVariableName = 'cftc'
+    fcastVariableName = 'forecast'
+    result = rSquaredComaprisonAcrossPeriods(model_type_ids=ids, cftcVariableName=cftcVariableName, fcastVariableName=fcastVariableName)
+
+
+
+    df_r2_result = pd.DataFrame(index = result[list(result)[0]].index.values)
+    df_nobs_result = pd.DataFrame(index=result[list(result)[0]].index.values)
+    for el in list(result):
+        a = pd.DataFrame(index=result[el].index, columns=[f"{el}_r2"], data=result[el]['r2'].values)
+        df_r2_result.loc[:,f"{el}_r2"] = a
+        a = pd.DataFrame(index=result[el].index, columns=[f"{el}_obs"], data=result[el]['nobs'].values)
+        df_nobs_result.loc[:, f"{el}_obs"] = a
+    df_r2_result.to_excel("r2_ComPumpSwap.xlsx")
+    df_nobs_result.to_excel('obsForR2Calc.xlsx')
 
 
 
