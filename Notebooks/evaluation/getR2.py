@@ -59,7 +59,7 @@ def getResiduals(model_type_id:int, cftcVariableName:str, fcastVariableName:str,
         tkr = models.loc[i, 'bb_tkr']
         print(f"{tkr} , model_id: {i}")
 
-        df_sample = getData(model_id=i, model_type_id=model_type_id, bb_tkr=tkr, model_types=model_types,
+        df_sample = getData(engine1,model_id=i, model_type_id=model_type_id, bb_tkr=tkr, model_types=model_types,
                             start_date=fixedStartdate, end_date=fixedEndDate)
 
         if type_ == 'diff':
@@ -119,11 +119,11 @@ def getR2results(model_type_id: int,
             startdate = dates_of_MM[dates_of_MM.bb_tkr == tkr].startdate.values[0]
             enddate = dates_of_MM[dates_of_MM.bb_tkr == tkr].enddate.values[0]
             print(f"startdate: {startdate}; Enddate: {enddate}")
-            df_sample = getData(model_id=i, model_type_id=model_type_id, bb_tkr=tkr, model_types=model_types,
+            df_sample = getData(engine1,model_id=i, model_type_id=model_type_id, bb_tkr=tkr, model_types=model_types,
                                 start_date=startdate, end_date=enddate)
 
         elif (fixedStartdate != None) | (fixedEndDate != None):
-            df_sample = getData(model_id=i, model_type_id=model_type_id, bb_tkr=tkr, model_types=model_types,
+            df_sample = getData(engine1,model_id=i, model_type_id=model_type_id, bb_tkr=tkr, model_types=model_types,
                                 start_date=fixedStartdate, end_date=fixedEndDate)
         else:
             df_sample = getData(engine1, model_id=i, model_type_id=model_type_id, bb_tkr=tkr, model_types=model_types,

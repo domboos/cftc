@@ -64,7 +64,7 @@ def getOpenInterest(bb_tkr):
     return oi
 
 
-def getData(engine1, model_id, model_type_id, bb_tkr, model_types, start_date=None, end_date=None):
+def getData(engine1,model_id, model_type_id, bb_tkr, model_types, start_date=None, end_date=None):
     forecast = pd.read_sql_query(f"SELECT * FROM cftc.forecast WHERE model_id = {model_id}", engine1,
                                  index_col='px_date')
     exposure = getexposure(engine1,
@@ -74,7 +74,7 @@ def getData(engine1, model_id, model_type_id, bb_tkr, model_types, start_date=No
     )
 
     exposure.columns = exposure.columns.droplevel(0)
-    exposure['diff'] = exposure.net_specs.diff()
+    exposure['diff'] = exposure[exposure.columns[0]].diff()
 
     df_sample = pd.merge(left=forecast[['qty']], right=exposure[['diff']], left_index=True, right_index=True,
                          how='left')
