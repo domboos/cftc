@@ -5,8 +5,6 @@ Created on Tue April 20, 2022
 @author: grbi, dominik
 """
 
-# klar
-
 import numpy as np
 import sqlalchemy as sq
 import statsmodels.api as sm
