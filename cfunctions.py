@@ -38,7 +38,7 @@ SQLTable._execute_insert = _execute_insert
 
 # functions
 # -------------------------------------------------------------------
-def gets(engine, type, data_tab='data', desc_tab='cot_desc', series_id=None, bb_tkr=None, bb_ykey='COMDTY',
+def gets(engine1, type, data_tab='data', desc_tab='cot_desc', series_id=None, bb_tkr=None, bb_ykey='COMDTY',
          start_dt='1900-01-01', end_dt='2100-01-01', constr=None, adjustment=None):
 
     if constr is None:
@@ -62,11 +62,11 @@ def gets(engine, type, data_tab='data', desc_tab='cot_desc', series_id=None, bb_
 
     h_1 = " WHERE px_date >= '" + str(start_dt) + "' AND px_date <= '" + str(end_dt) + "' AND px_id = "
     h_2 = series_id + constr + " order by px_date"
-    fut = pd.read_sql_query('SELECT px_date, qty FROM cftc.' + data_tab + h_1 + h_2, engine, index_col='px_date')
+    fut = pd.read_sql_query('SELECT px_date, qty FROM cftc.' + data_tab + h_1 + h_2, engine1, index_col='px_date')
     return fut
 
 
-def getexposure(type_of_trader, norm, bb_tkr, start_dt='1900-01-01', end_dt='2100-01-01', bb_ykey='COMDTY'):
+def getexposure(engine, type_of_trader, norm, bb_tkr, start_dt='1900-01-01', end_dt='2100-01-01', bb_ykey='COMDTY'):
     """
     Parameters
     ----------
@@ -90,18 +90,18 @@ def getexposure(type_of_trader, norm, bb_tkr, start_dt='1900-01-01', end_dt='210
     # - Exposure = mult * fut_adj_none * net_pos
     # - contract_size =  mult * fut_adj_none
 
-    pos = gets(engine1, type=type_of_trader, data_tab='vw_data', bb_tkr=bb_tkr, bb_ykey=bb_ykey,
+    pos = gets(engine, type=type_of_trader, data_tab='vw_data', bb_tkr=bb_tkr, bb_ykey=bb_ykey,
                start_dt=start_dt, end_dt=end_dt, adjustment=None)  # constr=constr,
 
     if norm == 'percent_oi':
-        oi = gets(engine1, type='agg_open_interest', data_tab='vw_data', desc_tab='cot_desc', bb_tkr=bb_tkr,
+        oi = gets(engine, type='agg_open_interest', data_tab='vw_data', desc_tab='cot_desc', bb_tkr=bb_tkr,
                   bb_ykey=bb_ykey, start_dt=start_dt, end_dt=end_dt)
         pos_temp = pd.merge(left=pos, right=oi, how='left', left_index=True, right_index=True,
                             suffixes=('_pos', '_oi'))
         exposure = pd.DataFrame(index=pos_temp.index, data=(pos_temp.qty_pos / pos_temp.qty_oi), columns=['qty'])
 
     elif norm == 'exposure':
-        price_non_adj = gets(engine1, type='contract_size', desc_tab='fut_desc', data_tab='vw_data', bb_tkr=bb_tkr,
+        price_non_adj = gets(engine, type='contract_size', desc_tab='fut_desc', data_tab='vw_data', bb_tkr=bb_tkr,
                              bb_ykey=bb_ykey, start_dt=start_dt, end_dt=end_dt, adjustment='none')
         df_merge = pd.merge(left=pos, right=price_non_adj, left_index=True, right_index=True, how='left')
 
@@ -112,11 +112,11 @@ def getexposure(type_of_trader, norm, bb_tkr, start_dt='1900-01-01', end_dt='210
         exposure = pos.copy()
         print('--- NUMBER ---')
 
-    midx = pd.MultiIndex(levels=[['cftc'], ['net_specs']], codes=[[0], [0]])
+    midx = pd.MultiIndex(levels=[['cftc'], [type_of_trader]], codes=[[0], [0]])
     exposure.columns = midx
 
     exposure.dropna(inplace=True)
-    print(exposure.to_string())
+    # print(exposure.to_string())
 
     return exposure
 
@@ -187,8 +187,8 @@ def getGamma(maxlag, regularization='d1', gammatype='sqrt', gammapara=1, naildow
 
         elif gammatype == 'sqrt':
             # original is 1
-            print(gammapara)
-            print(type(gammapara))
+            if gammapara is None:
+                gammapara = 1
             gamma[i, i] = np.sqrt(i + gammapara)
 
     # standardize sum of diagonal values to 1
@@ -260,9 +260,9 @@ def getAlpha(alpha_type, y, x=None, gma=None, start=None):
     elif alpha_type == 'var':
         alpha = y.var()[0]
     elif alpha_type == 'loocv':
-        press1 = lambda z, z1=y.values, z2=x, z3=gma: press(z, z1, z2, z3)
-        res = op.minimize(press1, x0=start, method='BFGS', tol=0.01, options={'disp': True,
-                        'maxiter': 20, 'gtol': 0.01, 'eps': 0.01})
+        press1 = lambda z, z1=y.values, z2=x, z3=gma: press(z, z1, z2, z3) * 100000000
+        res = op.minimize(press1, x0=start, method='BFGS', tol=0.0001, options={'disp': True,
+                        'maxiter': 20, 'gtol': 0.00001, 'eps': 0.0001})
         alpha = res.x
     elif alpha_type == 'gcv':
         gcv1 = lambda z, z1=y.values, z2=x, z3=gma: gcv(z, z1, z2, z3)

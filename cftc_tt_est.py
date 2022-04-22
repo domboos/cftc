@@ -36,7 +36,7 @@ s0 = np.array([100, 100])
 conn = engine1.connect()
 conn.execute('REFRESH MATERIALIZED VIEW cftc.vw_model_desc')
 model_list = pd.read_sql_query("SELECT * FROM cftc.vw_model_desc WHERE "
-                               "max_date IS NULL ORDER BY bb_tkr, bb_ykey",
+                               "max_date IS NULL and model_id > 4779 ORDER BY bb_tkr, bb_ykey",
                                engine1)
 conn.close()
 
@@ -72,7 +72,7 @@ for idx, model in model_list.iterrows():
                      naildownvalue1=model.naildown_value1)
 
     # fecthing cot, crate lagged returns and merge
-    pos = getexposure(type_of_trader=model.cot_type, norm=model.cot_norm, bb_tkr=bb_tkr, bb_ykey=bb_ykey)
+    pos = getexposure(engine1, type_of_trader=model.cot_type, norm=model.cot_norm, bb_tkr=bb_tkr, bb_ykey=bb_ykey)
     ret = getRetMat(ret_series, model.lookback) # this is too long
     cr = merge_pos_ret(pos, ret, model.diff)
 
