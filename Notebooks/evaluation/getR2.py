@@ -32,7 +32,7 @@ def getR2ByHand(df_sample, cftcVariableName, fcastVariableName):
 
 
 def getResiduals(model_type_id:int, cftcVariableName:str, fcastVariableName:str, fixedStartdate=None,
-                 fixedEndDate=None, type_=None) -> dict[int | Any, str | Any]:
+                 fixedEndDate=None, type_=None):
     """
     :param model_type_id:
     :param cftcVariableName: 'cftc' or 'cftc_adj'
@@ -126,7 +126,7 @@ def getR2results(model_type_id: int,
             df_sample = getData(model_id=i, model_type_id=model_type_id, bb_tkr=tkr, model_types=model_types,
                                 start_date=fixedStartdate, end_date=fixedEndDate)
         else:
-            df_sample = getData(model_id=i, model_type_id=model_type_id, bb_tkr=tkr, model_types=model_types,
+            df_sample = getData(engine1, model_id=i, model_type_id=model_type_id, bb_tkr=tkr, model_types=model_types,
                                 start_date=None, end_date=None)
 
         # Might have no data for pre defined period
@@ -226,23 +226,23 @@ def rSquaredComaprisonAcrossPeriods(model_type_ids: list, cftcVariableName: str,
 if __name__ == '__main__':
 
 
-    # ids =  [153, 152, 151, 150, 149, 148, 147, 146,145]
-    # cftcVariableName = 'cftc'
-    # fcastVariableName = 'forecast'
-    # result = rSquaredComaprisonAcrossPeriods(model_type_ids=ids, cftcVariableName=cftcVariableName, fcastVariableName=fcastVariableName)
-    #
-    # with open('r2Results145-153.pickle', 'wb') as handle:
-    #     pickle.dump(result, handle, protocol=pickle.HIGHEST_PROTOCOL)
-    #
-    # df_r2_result = pd.DataFrame(index = result[list(result)[0]].index.values)
-    # df_nobs_result = pd.DataFrame(index=result[list(result)[0]].index.values)
-    # for el in list(result):
-    #     a = pd.DataFrame(index=result[el].index, columns=[f"{el}_r2"], data=result[el]['r2'].values)
-    #     df_r2_result.loc[:,f"{el}_r2"] = a
-    #     a = pd.DataFrame(index=result[el].index, columns=[f"{el}_obs"], data=result[el]['nobs'].values)
-    #     df_nobs_result.loc[:, f"{el}_obs"] = a
-    # df_r2_result.to_excel("r2_ComPumpSwap.xlsx")
-    # df_nobs_result.to_excel('obsForR2Calc.xlsx')
+    ids =  [131, 172]
+    cftcVariableName = 'cftc'
+    fcastVariableName = 'forecast'
+    result = rSquaredComaprisonAcrossPeriods(model_type_ids=ids, cftcVariableName=cftcVariableName, fcastVariableName=fcastVariableName)
+
+    with open('r2Results145-153.pickle', 'wb') as handle:
+        pickle.dump(result, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+    df_r2_result = pd.DataFrame(index = result[list(result)[0]].index.values)
+    df_nobs_result = pd.DataFrame(index=result[list(result)[0]].index.values)
+    for el in list(result):
+        a = pd.DataFrame(index=result[el].index, columns=[f"{el}_r2"], data=result[el]['r2'].values)
+        df_r2_result.loc[:,f"{el}_r2"] = a
+        a = pd.DataFrame(index=result[el].index, columns=[f"{el}_obs"], data=result[el]['nobs'].values)
+        df_nobs_result.loc[:, f"{el}_obs"] = a
+    df_r2_result.to_excel("r2_ComPumpSwap.xlsx")
+    df_nobs_result.to_excel('obsForR2Calc.xlsx')
 
 
 
