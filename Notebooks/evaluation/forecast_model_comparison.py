@@ -62,7 +62,7 @@ def MZ1Model(model_type_id):
     for i in models.index:
         print(models.loc[i, 'bb_tkr'])  # print bb_tkr
         df_sample = getData(model_id=i, model_type_id=model_type_id, bb_tkr=models.loc[i, 'bb_tkr'],
-                            model_types=model_types, start_date=None, end_date=None)
+                            model_types=model_types, start_date=None, end_date=None,engine1=engine1)
         # Might have no data for pre defined period
         if df_sample.shape[0] == 0:
             continue
