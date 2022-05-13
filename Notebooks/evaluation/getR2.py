@@ -226,8 +226,7 @@ def rSquaredComaprisonAcrossPeriods(model_type_ids: list, cftcVariableName: str,
 if __name__ == '__main__':
 
 
-    ids =  [82, 131, 149, 173]
-
+    ids =  [173]
     cftcVariableName = 'cftc'
     fcastVariableName = 'forecast'
     result = rSquaredComaprisonAcrossPeriods(model_type_ids=ids, cftcVariableName=cftcVariableName, fcastVariableName=fcastVariableName)
@@ -242,8 +241,8 @@ if __name__ == '__main__':
         df_r2_result.loc[:,f"{el}_r2"] = a
         a = pd.DataFrame(index=result[el].index, columns=[f"{el}_obs"], data=result[el]['nobs'].values)
         df_nobs_result.loc[:, f"{el}_obs"] = a
-    df_r2_result.to_excel("U:\\r2_ComPumpSwap.xlsx")
-    df_nobs_result.to_excel('U:\\obsForR2Calc.xlsx')
+    df_r2_result.to_excel("r2_ComPumpSwap.xlsx")
+    df_nobs_result.to_excel('obsForR2Calc.xlsx')
 
 
 
@@ -261,7 +260,7 @@ if __name__ == '__main__':
     #                                            fcastVariableName=fcastVariableName, note=f"{id_}_length_like_MM",
     #                                            timespan='MM')
     print("hi")
-    # res = pd.DataFramagg_open_intereste.from_dict(result)
+    # res = pd.DataFrame.from_dict(result)
     # res.to_excel("test1.xlsx")
 
 

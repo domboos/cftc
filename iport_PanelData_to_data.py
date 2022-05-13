@@ -1,4 +1,5 @@
 # speed up to_sql inserts heavily with low latency db connection (https://github.com/pandas-dev/pandas/issues/8953)
+import numpy as np
 from pandas.io.sql import SQLTable
 
 def _execute_insert(self, conn, keys, data_iter):
@@ -13,16 +14,22 @@ import sqlalchemy as sq
 
 engine1 = sq.create_engine("postgresql+psycopg2://grbi@iwa-backtest:grbizhaw@iwa-backtest.postgres.database.azure.com:5432/postgres")
 
-file = 'C:\\Users\\grbi\\switchdrive\\Tracking Traders\\02_Daten\\02_readyforimport\\fut_desc_HigherOrder.csv'
+file = 'C:\\Users\\grbi\\switchdrive\\Tracking Traders\\02_Daten\\02_readyforimport\\GernericFuts_2_3_4.xlsx'
+
+df = pd.read_excel(file,sheet_name='Numeric')
+df = df.set_index("dates")
+
+df1 = df.stack()
+df1 = df1.reset_index()
+df1.columns = ['px_date','px_id','qty']
+
+df2 = df1[['px_id','px_date','qty']]
+
+print(df2)
+
+df2.iloc[200000:, :].to_sql('data', engine1, schema='cftc', if_exists='append', index=False)
+print('hi')
 
 
-pd.read_csv(file,sep=";").to_sql('fut_desc', engine1, schema='cftc', if_exists='append', index=False)
 
-file2 = 'C:\\Users\\bood\\switchdrive\\Tracking Traders\\02_Daten\\02_readyforimport\\px_adj_none.xlsx'
-
-#.dropna(axis=0, how='any')
-#h= pd.read_excel(file2, 'load', skiprows=1, header=0, index_col=0).stack()\
-#    .reset_index().rename(columns={'level_1': "px_id", 0: "qty"})
-
-#h.to_sql('data', engine1, schema='cftc', if_exists='append', index=False)
 
