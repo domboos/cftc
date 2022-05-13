@@ -13,9 +13,10 @@ import sqlalchemy as sq
 
 engine1 = sq.create_engine("postgresql+psycopg2://grbi@iwa-backtest:grbizhaw@iwa-backtest.postgres.database.azure.com:5432/postgres")
 
-file = 'U:\\NetNC.xlsx'
+file = 'C:\\Users\\grbi\\switchdrive\\Tracking Traders\\02_Daten\\02_readyforimport\\fut_desc_HigherOrder.csv'
 
-pd.read_excel(file, 'import').to_sql('data', engine1, schema='cftc', if_exists='append', index=False)
+
+pd.read_csv(file,sep=";").to_sql('fut_desc', engine1, schema='cftc', if_exists='append', index=False)
 
 # file2 = 'C:\\Users\\bood\\switchdrive\\Tracking Traders\\02_Daten\\02_readyforimport\\px_adj_none.xlsx'
 

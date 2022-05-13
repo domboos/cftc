@@ -226,7 +226,7 @@ def rSquaredComaprisonAcrossPeriods(model_type_ids: list, cftcVariableName: str,
 if __name__ == '__main__':
 
 
-    ids =  [131, 172]
+    ids =  [173]
     cftcVariableName = 'cftc'
     fcastVariableName = 'forecast'
     result = rSquaredComaprisonAcrossPeriods(model_type_ids=ids, cftcVariableName=cftcVariableName, fcastVariableName=fcastVariableName)
