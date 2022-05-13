@@ -261,9 +261,16 @@ def getAlpha(alpha_type, y, x=None, gma=None, start=None):
         alpha = y.var()[0]
     elif alpha_type == 'loocv':
         press1 = lambda z, z1=y.values, z2=x, z3=gma: press(z, z1, z2, z3) * 100000000
+        gcv1 = lambda z, z1=y.values, z2=x, z3=gma: gcv(z, z1, z2, z3) * 100000000
         res = op.minimize(press1, x0=start, method='BFGS', tol=0.0001, options={'disp': True,
                         'maxiter': 20, 'gtol': 0.00001, 'eps': 0.0001})
-        alpha = res.x
+        if res.success == True:
+            print(res.x)
+            alpha = min(2000, abs(res.x))
+        else:
+            print('-----------------')
+            print('alpha not updated')
+            alpha = start
     elif alpha_type == 'gcv':
         gcv1 = lambda z, z1=y.values, z2=x, z3=gma: gcv(z, z1, z2, z3)
         res = op.minimize(gcv1, x0=start, method='Nelder-Mead', options={'disp': True,
