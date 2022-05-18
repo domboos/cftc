@@ -3,6 +3,8 @@ import re
 import pandas as pd
 import statsmodels.api as sm
 from cfunctions import *
+from scipy.stats import t
+import numpy as np
 
 #Engine:
 engine1 = engine1
@@ -51,12 +53,6 @@ def getCarry(bb_ticker:str):
     return df[['deltaCarry']].copy()
 
 
-getCarry('CT')
-
-
-
-
-
 query_models = """
     select * from cftc.model_desc 
     where model_type_id = 82
@@ -91,18 +87,34 @@ for idx, model in models.iterrows():
 
     deltaCarry = getCarry(bb_tkr)
 
-    cr = merge_pos_ret_carry(pos,ret,deltaCarry,model.diff)
+    cr = merge_pos_ret_carry(pos, ret, deltaCarry, model.diff)
 
-    y0 = cr.iloc[:,0].values
-    x0 = cr.iloc[:,1:].values
-    gamma_final = np.append(gamma, np.zeros((gamma.shape[0],1)), axis=1) * 500
+    y0 = cr.iloc[:, 0].values
+    x0 = cr.iloc[:, 1:].values
+    gamma_final = np.append(gamma, np.zeros((gamma.shape[0], 1)), axis=1)
+    alpha = getAlpha(alpha_type='loocv', y=y0, x=x0, gma=gamma_final, start=500)
     y = np.append(y0,np.zeros((1,gamma_final.shape[0])))
-    x = np.concatenate((x0, gamma_final))
+    x = np.concatenate((x0, gamma_final*alpha))
     model_fit = sm.OLS(y, x).fit()
     # print(model_fit.summary())
 
-    df_res.loc[model.bb_tkr,'tval'] = model_fit.tvalues[-1]
+    print(model_fit.df_resid)
+    print(model_fit.nobs)
+    print(np.std(model_fit.resid[:1408]))
+    print(np.std(model_fit.resid[1408:]))
+    print(y0.shape[0])
+    _df = degFree(x0, gamma_final*alpha, y0.shape[0])
+    print(_df)
+    _tstat = tstat(x0, y0, gamma_final * alpha, model_fit.params)
+    print(_tstat)
+    t2 = model_fit.tvalues[-1]*model_fit.df_resid/_df
+    pval2 = t.sf(abs(t2), df=_df)*2
+
+    df_res.loc[model.bb_tkr, 'tval'] = model_fit.tvalues[-1]
+    df_res.loc[model.bb_tkr, 'tval2'] = t2
+    df_res.loc[model.bb_tkr, 'tval3'] = _tstat[-1]
     df_res.loc[model.bb_tkr, 'pval'] = model_fit.pvalues[-1]
+    df_res.loc[model.bb_tkr, 'pval2'] = pval2
     df_res.loc[model.bb_tkr, 'coef'] = model_fit.params[-1]
 
 print(df_res)

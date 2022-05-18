@@ -260,13 +260,17 @@ def getAlpha(alpha_type, y, x=None, gma=None, start=None):
     elif alpha_type == 'var':
         alpha = y.var()[0]
     elif alpha_type == 'loocv':
-        press1 = lambda z, z1=y.values, z2=x, z3=gma: press(z, z1, z2, z3) * 100000000
-        gcv1 = lambda z, z1=y.values, z2=x, z3=gma: gcv(z, z1, z2, z3) * 100000000
+        if isinstance(y, np.ndarray):
+            y_tmp = y
+        else:
+            y_tmp = y.values
+        press1 = lambda z, z1=y_tmp, z2=x, z3=gma: press(z, z1, z2, z3)
+        gcv1 = lambda z, z1=y_tmp, z2=x, z3=gma: gcv(z, z1, z2, z3) * 100000000
         res = op.minimize(press1, x0=start, method='BFGS', tol=0.0001, options={'disp': True,
                         'maxiter': 20, 'gtol': 0.00001, 'eps': 0.0001})
         if res.success == True:
             print(res.x)
-            alpha = min(2000, abs(res.x))
+            alpha = min(20000, abs(res.x))
         else:
             print('-----------------')
             print('alpha not updated')
@@ -332,7 +336,10 @@ def press(a, _y, _x, g):
     B = np.diag(1 / np.diag(iH))
     BiHy = B @ iH @ _y
     k = 0.000000000001 * np.transpose(BiHy) @ BiHy / n
-    return k[0][0]
+    if np.isscalar(k):
+        return k
+    else:
+        return k[0][0]
 
 
 def press_2(a1, _y, _x, g1, g2):
@@ -379,3 +386,24 @@ def getBeta(engine, model_id = None, model_type_id=None, bb_tkr=None, bb_ykey='C
         if drop_beta_date:
             beta.index = beta.index.droplevel('beta_date')
     return beta, model_id
+
+
+def hatMatrix(_x, g):
+    return _x @ np.linalg.inv(np.transpose(_x) @ _x + np.transpose(g) @ g) @ np.transpose(_x)
+
+
+def degFree(_x, g, n):
+    H = hatMatrix(_x, g)
+    return n - np.trace(2 * H - H @ np.transpose(H))
+
+def std_err(_x, _y, g, b):
+    _inv = np.linalg.inv(np.transpose(_x) @ _x + np.transpose(g) @ g)
+    v0 = np.diag(_inv @ np.transpose(_x) @ _x @ _inv)
+    nu = degFree(_x, g, _y.shape[0])
+    resid = _y - _x @ b
+    # sigma_sqr = np.transpose(resid) @ resid / nu
+    sigma_sqr = np.sum(resid * resid) / nu
+    return np.sqrt(v0 * sigma_sqr)
+
+def tstat(_x, _y, g, b):
+    return b / std_err(_x, _y, g, b)
