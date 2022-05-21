@@ -31,7 +31,7 @@ def getR2ByHand(df_sample, cftcVariableName, fcastVariableName):
         return np.nan, nobs
 
 
-def getResiduals(model_type_id:int, cftcVariableName:str, fcastVariableName:str, fixedStartdate=None,
+def getResiduals(model_type_id: int, cftcVariableName: str, fcastVariableName: str, fixedStartdate=None,
                  fixedEndDate=None, type_=None):
     """
     :param model_type_id:
@@ -59,7 +59,7 @@ def getResiduals(model_type_id:int, cftcVariableName:str, fcastVariableName:str,
         tkr = models.loc[i, 'bb_tkr']
         print(f"{tkr} , model_id: {i}")
 
-        df_sample = getData(engine1,model_id=i, model_type_id=model_type_id, bb_tkr=tkr, model_types=model_types,
+        df_sample = getData(engine1, model_id=i, model_type_id=model_type_id, bb_tkr=tkr, model_types=model_types,
                             start_date=fixedStartdate, end_date=fixedEndDate)
 
         if type_ == 'diff':
@@ -72,7 +72,6 @@ def getResiduals(model_type_id:int, cftcVariableName:str, fcastVariableName:str,
             residuals[tkr] = mod_fit.resid
 
     return residuals
-
 
 
 def getR2results(model_type_id: int,
@@ -110,7 +109,7 @@ def getR2results(model_type_id: int,
     if timespan == 'MM':
         dates_of_MM = getDates_of_MM()
 
-    for i in models.index: # iterates through model_id
+    for i in models.index:  # iterates through model_id
 
         tkr = models.loc[i, 'bb_tkr']
         print(f"{model_type_id}, {tkr}, model_id: {i}")
@@ -119,11 +118,11 @@ def getR2results(model_type_id: int,
             startdate = dates_of_MM[dates_of_MM.bb_tkr == tkr].startdate.values[0]
             enddate = dates_of_MM[dates_of_MM.bb_tkr == tkr].enddate.values[0]
             print(f"startdate: {startdate}; Enddate: {enddate}")
-            df_sample = getData(engine1,model_id=i, model_type_id=model_type_id, bb_tkr=tkr, model_types=model_types,
+            df_sample = getData(engine1, model_id=i, model_type_id=model_type_id, bb_tkr=tkr, model_types=model_types,
                                 start_date=startdate, end_date=enddate)
 
         elif (fixedStartdate != None) | (fixedEndDate != None):
-            df_sample = getData(engine1,model_id=i, model_type_id=model_type_id, bb_tkr=tkr, model_types=model_types,
+            df_sample = getData(engine1, model_id=i, model_type_id=model_type_id, bb_tkr=tkr, model_types=model_types,
                                 start_date=fixedStartdate, end_date=fixedEndDate)
         else:
             df_sample = getData(engine1, model_id=i, model_type_id=model_type_id, bb_tkr=tkr, model_types=model_types,
@@ -165,9 +164,9 @@ def rSquaredComaprisonAcrossPeriods(model_type_ids: list, cftcVariableName: str,
     for id_ in model_type_ids:
         # complete Period:
         result[f"{id_}_allObs"] = getR2results(model_type_id=id_,
-                                              cftcVariableName=cftcVariableName,
-                                              fcastVariableName=fcastVariableName,
-                                              note=f"{id_}_allObs")
+                                               cftcVariableName=cftcVariableName,
+                                               fcastVariableName=fcastVariableName,
+                                               note=f"{id_}_allObs")
 
         for period in list(periods):
             result[f"{id_}_{period}"] = getR2results(model_type_id=id_,
@@ -177,9 +176,6 @@ def rSquaredComaprisonAcrossPeriods(model_type_ids: list, cftcVariableName: str,
                                                      fixedEndDate=periods[period][1],
                                                      note=f"{id_}_{period}")
     return result
-
-
-
 
 
 # # %% #* Misc R2 Results
@@ -225,32 +221,46 @@ def rSquaredComaprisonAcrossPeriods(model_type_ids: list, cftcVariableName: str,
 
 if __name__ == '__main__':
 
+    model_type_ids = [181] #[180, 131, 179, 137]
 
-    ids =  [173]
     cftcVariableName = 'cftc'
     fcastVariableName = 'forecast'
-    result = rSquaredComaprisonAcrossPeriods(model_type_ids=ids, cftcVariableName=cftcVariableName, fcastVariableName=fcastVariableName)
 
-    with open('r2Results145-153.pickle', 'wb') as handle:
-        pickle.dump(result, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    df_all = pd.DataFrame()
+    result = {}
+    for id_ in model_type_ids:
+        df1 = getR2results(model_type_id=id_,
+                           cftcVariableName=cftcVariableName,
+                           fcastVariableName=fcastVariableName,
+                           timespan='MM',
+                           note=f"{id_}")
 
-    df_r2_result = pd.DataFrame(index = result[list(result)[0]].index.values)
-    df_nobs_result = pd.DataFrame(index=result[list(result)[0]].index.values)
-    for el in list(result):
-        a = pd.DataFrame(index=result[el].index, columns=[f"{el}_r2"], data=result[el]['r2'].values)
-        df_r2_result.loc[:,f"{el}_r2"] = a
-        a = pd.DataFrame(index=result[el].index, columns=[f"{el}_obs"], data=result[el]['nobs'].values)
-        df_nobs_result.loc[:, f"{el}_obs"] = a
-    df_r2_result.to_excel("r2_ComPumpSwap.xlsx")
-    df_nobs_result.to_excel('obsForR2Calc.xlsx')
+        # df1.columns = [id_]
+        df1.to_csv('181_MM.csv')
+
+        # if id_ == 180:
+        #     df_all = df1
+        # else:
+        #     df_all = pd.merge(df_all,df1,left_index=True,right_index=True)
+
+    # df_all.to_csv('r2_number_SPI_flat_and_sqrt.csv')
 
 
 
-
-
-
-
-
+    # result = rSquaredComaprisonAcrossPeriods(model_type_ids=model_type_ids, cftcVariableName=cftcVariableName, fcastVariableName=fcastVariableName)
+    #
+    # # with open('r2Results145-153.pickle', 'wb') as handle:
+    # #     pickle.dump(result, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    #
+    # df_r2_result = pd.DataFrame(index = result[list(result)[0]].index.values)
+    # df_nobs_result = pd.DataFrame(index=result[list(result)[0]].index.values)
+    # for el in list(result):
+    #     a = pd.DataFrame(index=result[el].index, columns=[f"{el}_r2"], data=result[el]['r2'].values)
+    #     df_r2_result.loc[:,f"{el}_r2"] = a
+    #     a = pd.DataFrame(index=result[el].index, columns=[f"{el}_obs"], data=result[el]['nobs'].values)
+    #     df_nobs_result.loc[:, f"{el}_obs"] = a
+    # df_r2_result.to_excel("r2_NumberOfCont-TABLEFORPAPER.xlsx")
+    # df_nobs_result.to_excel('obs173-175-176-177.xlsx')
 
     # get MM results
     # result['95_whole'] = getR2results(model_type_id= 95,cftcVariableName =cftcVariableName ,fcastVariableName= fcastVariableName,note = '95_whole')
@@ -262,9 +272,3 @@ if __name__ == '__main__':
     print("hi")
     # res = pd.DataFrame.from_dict(result)
     # res.to_excel("test1.xlsx")
-
-
-
-
-
-

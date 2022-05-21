@@ -3,6 +3,7 @@ import statsmodels.api as sm
 from datetime import datetime
 import pandas as pd
 import matplotlib.pyplot as plt
+plt.rcParams["font.family"] = "Times New Roman" # https://stackoverflow.com/questions/40734672/how-to-set-the-label-fonts-as-time-new-roman-by-drawparallels-in-python
 import sqlalchemy as sq
 import seaborn as sns
 from datetime import datetime
@@ -42,15 +43,15 @@ def getBetas2(model_id, betas_all, date):
 def createFigurePerModelwithDates(model_type, dates, savefig=False):
     betas_all, models = getSpecificData(dates=dates, model_type=model_type)
     model_ids = list(models.model_id)
-    color = ['crimson', 'cyan', 'blue', 'green', 'grey',
-             'black']  # https://matplotlib.org/3.1.0/gallery/color/named_colors.html
+    color = ['crimson', 'cyan', 'blue', 'green', 'grey']  # https://matplotlib.org/3.1.0/gallery/color/named_colors.html
     # def Layout
-    fig, axs = plt.subplots(8, 3, figsize=(15, 20))  # sharex=False, sharey= False
+    fig, axs = plt.subplots(8, 3, figsize=(8, 10))  # sharex=False, sharey= False
     fig.tight_layout()
-    # fig.suptitle(f"All Betas with model_id: {model_type}",fontsize=30)
-    # fig.subplots_adjust(top=0.95)
+    plt.subplots_adjust(top=0.98, bottom=0.02, left=0.05, right=0.98, hspace=0.3,
+                        wspace=0.15)
 
-    sns.set(font_scale=1.2)
+
+    # sns.set(font_scale=1.2)
     sns.set_style('white')
     sns.set_style('white', {'font.family': 'serif', 'font.serif': 'Times New Roman'})
 
@@ -65,7 +66,6 @@ def createFigurePerModelwithDates(model_type, dates, savefig=False):
         for row in range(len(plot_matrix)):
             try:
                 model_id = model_ids[plot_matrix[row][col]]
-                print(model_id)
             except:
                 break
             ax_curr = axs[row, col]
@@ -73,23 +73,22 @@ def createFigurePerModelwithDates(model_type, dates, savefig=False):
             k = 0
             for date in dates:
                 beta = getBetas2(model_id, betas_all, [date])
-                sns.lineplot(x=beta.return_lag, y=beta.qty, ax=ax_curr, linewidth=3, legend=False, color=color[k])
+                sns.lineplot(x=beta.return_lag, y=beta.qty, ax=ax_curr, linewidth=2.5, legend=False, color=color[k])
                 k = k + 1
-                # plt.xticks([])
-                # plt.yticks([])
+                # ax_curr.set(fontsize=10)
             ax_curr.set_xlabel('')
             ax_curr.set_ylabel('')
 
             title = str(models[models.model_id == model_id].bb_tkr.values)[2:-2]
             title1 = \
-            pd.read_sql_query(f"SELECT name FROM cftc.order_of_things where bb_tkr = '{title}'", engine1).name.values[0]
-            ax_curr.set_title(title1)
+                pd.read_sql_query(f"SELECT name FROM cftc.order_of_things where bb_tkr = '{title}'",
+                                  engine1).name.values[0]
+            ax_curr.set_title(title1,fontsize=10)
+            print(f"{title1}: {model_id}")
 
     fig.delaxes(axs[7, 2])
-    # plt.gca().axes.get_yaxis().set_visible(False)
 
-    # handles, labels = ax.get_legend_handles_labels()
-    fig.legend(labels=dates, bbox_to_anchor=(0.9, 0.12), fontsize=20, frameon=False)
+    fig.legend(labels=dates, bbox_to_anchor=(0.9, 0.12), fontsize=10, frameon=False)
     if savefig == True:
         plt.savefig(f"./temp/Betas_for_Model_{model_type}.png", dpi=100)  # './reports/figures/'+
 
@@ -117,23 +116,20 @@ def compareBetasOf2Models(model_typeMM, model_typeNonc, labels, dates, savefig=F
     model_idsMM = list(betas_MM.groupby('model_id').ranking.min().sort_values(ascending=True).index)
 
     # *define Layout
-    color = ['crimson', 'cyan']  # https://matplotlib.org/3.1.0/gallery/color/named_colors.html
+    # https://matplotlib.org/3.1.0/gallery/color/named_colors.html
     fig, axs = plt.subplots(8, 3, figsize=(15, 20))  # sharex=False, sharey= False ,
     fig.tight_layout()
-    # fig.suptitle(f"All Betas with model_id: {model_typeNonc},{model_typeMM}",fontsize=30)
-    # fig.subplots_adjust(top=0.95)
+    plt.subplots_adjust(top=0.98, bottom=0.02, left=0.05, right=0.98, hspace=0.3,
+                        wspace=0.15)
+    # fig.subplots_adjust(top=0.99,left=0.01)
 
-    sns.set(font_scale=1.5)
-    sns.set_style('white')
+    # sns.set(font_scale=1.)
+
     sns.set_style('white', {'font.family': 'serif', 'font.serif': 'Times New Roman'})
-
-    # fig.text(0.5, 0.00, 'Return Lag', ha='center', fontsize = 20)
-    # fig.text(0.00, 0.5, 'Beta', va='center', rotation='vertical', fontsize = 20)
 
     # DO Plots:
     plot_matrix = np.arange(24).reshape(8, -1)
     for col in range(len(plot_matrix[0])):
-        # print(f"Row: {row}")print(f"Row: {row}")
         for row in range(len(plot_matrix)):
             try:
                 model_id_nonc = model_idsNonc[plot_matrix[row][col]]
@@ -148,32 +144,39 @@ def compareBetasOf2Models(model_typeMM, model_typeNonc, labels, dates, savefig=F
             sns.lineplot(x=betaMM.return_lag, y=betaMM.qty, ax=ax_curr, linewidth=3, legend=False, color='crimson')
             sns.lineplot(x=betaNonC.return_lag, y=betaNonC.qty, ax=ax_curr, linewidth=3, legend=False, color='cyan')
             ax_curr.axhline(0, ls='--', color='black')
-            # ax_curr.yaxis.set_major_formatter(FormatStrFormatter('%e'))
+            ax_curr.ticklabel_format(axis='y',style='sci',useMathText=True)
+            ax_curr.yaxis.set_major_formatter(FormatStrFormatter('%.1e'))
+            ystart, yend = ax_curr.get_ylim()
+            diff = (yend + abs(ystart))
+            ax_curr.set(yticks=np.array([0,diff*0.5,yend]))
+
             title = str(models_NonC[models_NonC.model_id == model_id_nonc].bb_tkr.values)[2:-2]
             title1 = \
-            pd.read_sql_query(f"SELECT name FROM cftc.order_of_things where bb_tkr = '{title}'", engine1).name.values[0]
+                pd.read_sql_query(f"SELECT name FROM cftc.order_of_things where bb_tkr = '{title}'",
+                                  engine1).name.values[0]
             print(title1)
-            ax_curr.set_title(title1)
+            ax_curr.set_title(title1,fontsize=12)
 
             ax_curr.set_xlabel('')
             ax_curr.set_ylabel('')
 
     fig.delaxes(axs[7, 2])
-    # plt.gca().axes.get_yaxis().set_visible(False)
 
-    # handles, labels = ax.get_legend_handles_labels() #first model is MM , second is NONC
-    # fig.legend(labels=labels, bbox_to_anchor=(0.98, 0.12),fontsize = 20,frameon = False)
+    # fig.legend(labels=labels, bbox_to_anchor=(0.98, 0.12),fontsize = 12,frameon = False)
+
     if savefig == True:
         plt.savefig(f"Beta_comparison_{model_typeNonc}-{model_typeMM}.png", dpi=100)
 
     plt.show()
 
 
-def examplecreateFigurePerModelwithDates(model_type_ids=None):
-    # model_type_ids example: [82,76,95,100]
-    if model_type_ids is None:
-        model_type_ids = [132]
-    dates = ['2002-12-31', '2006-12-26', '2010-12-28', '2014-12-30', '2018-12-25']
+def examplecreateFigurePerModelwithDates(model_type_ids:list,dates:list):
+    if not model_type_ids:
+        print('input is empty ')
+
+
+    # dates = ['2002-12-31', '2006-12-26', '2010-12-28', '2014-12-30', '2018-12-25']
+
     pathSaveFig = "reports/figures/Betas/"
     for model_type in model_type_ids:
         try:
@@ -183,16 +186,20 @@ def examplecreateFigurePerModelwithDates(model_type_ids=None):
 
 
 if __name__ == '__main__':
-    modelTypeIds = [153, 152, 151, 150, 149, 148, 147, 146, 145]
-    examplecreateFigurePerModelwithDates(modelTypeIds)
 
-    # Example compareBetasOf2Models():
+    # dates = ['1999-12-28',
+    #          '2004-12-28',
+    #          '2009-12-29',
+    #          '2014-12-30',
+    #          '2019-12-31']
+    # examplecreateFigurePerModelwithDates([76],dates)
 
-    # #define Dates
-    # dates = ['2019-12-31']
-    # labels = ['130','131']
-    #
-    # model_typeMM = 130 #*Model2
-    # model_typeNonc = 131  #*model1
-    #
-    # compare2Models(model_typeMM,model_typeNonc,labels,dates,savefig = True,pathSaveFig = "/home/jovyan/work/reports/figures/Betas/")
+
+    # Example compareBetasOf2Models(): # #define Dates
+    dates = ['2019-12-31']
+    labels = ['','']#['Non Commercials', 'Producers']
+
+    model_typeMM = 139  # *Model2
+    model_typeNonc = 182  # *model1
+
+    compareBetasOf2Models(model_typeMM, model_typeNonc, labels, dates, savefig=True)

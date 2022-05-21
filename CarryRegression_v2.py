@@ -90,19 +90,20 @@ for idx, model in models.iterrows():
 
     deltaCarry = getCarry(bb_tkr)
     print(deltaCarry)
-    cr_g = merge_pos_ret_carry(pos, ret, deltaCarry, model.diff)
 
-    qry = " SELECT px_date, rel_return from cftc.vw_return_w where bb_tkr = '" + str(bb_tkr) + "' order by px_date"
+    qry = " SELECT px_date, carry_return from cftc.vw_return_w where bb_tkr = '" + str(bb_tkr) + "' order by px_date"
     deltaCarry = pd.read_sql_query(qry, engine1, index_col='px_date')
-    cr = merge_pos_ret_carry(pos, ret, deltaCarry, model.diff)
-
+    # cr = merge_pos_ret_carry(pos, ret, deltaCarry, model.diff)
+    cr = merge_pos_ret(pos,ret,diff=model.diff)
     y0 = cr.iloc[:, 0].values
     x0 = cr.iloc[:, 1:].values
-    model_fit_OLS = sm.OLS(y0, x0).fit()
-    gamma_final = np.append(gamma, np.zeros((gamma.shape[0], 1)), axis=1)
+    # gamma_final = np.append(gamma, np.zeros((gamma.shape[0], 1)), axis=1)
+    gamma_final = gamma
     alpha = getAlpha(alpha_type='loocv', y=y0, x=x0, gma=gamma_final, start=500)
     y = np.append(y0,np.zeros((1,gamma_final.shape[0])))
     x = np.concatenate((x0, gamma_final*alpha))
+
+
     model_fit = sm.OLS(y, x).fit()
     # print(model_fit.summary())
 
@@ -122,15 +123,17 @@ for idx, model in models.iterrows():
 
     #df_res.loc[model.bb_tkr, 'tval'] = model_fit.tvalues[-1]
     #df_res.loc[model.bb_tkr, 'tval2'] = t2
-    df_res.loc[model.bb_tkr, 'tval'] = _tstat[-1]
-    df_res.loc[model.bb_tkr, 'rsqrt'] = _rsqrt
+    # df_res.loc[model.bb_tkr, 'tval'] = _tstat[-1]
+    # df_res.loc[model.bb_tkr, 'rsqrt'] = _rsqrt
     #df_res.loc[model.bb_tkr, 'tval_ols'] = model_fit_OLS.tvalues[-1]
-    #df_res.loc[model.bb_tkr, 'coef'] = model_fit.params[-1]
+    # df_res.loc[model.bb_tkr, 'coef'] = model_fit.params[-1]
     #df_res.loc[model.bb_tkr, 'coef_OLS'] = model_fit_OLS.params[-1]
+
+    df_res.loc[model.bb_tkr, 'nobs'] = model_fit.nobs
 
 print(df_res)
 
-df_res.to_csv('Carry.csv')
+df_res.to_csv('136_nobs.csv')
 
 
 #  (Gorton, Hayashi, Rouwenhorst, 2013, Hong, Yogo, 2012, Yang, 2013).

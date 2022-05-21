@@ -9,7 +9,56 @@ import matplotlib.pyplot as plt
 from statsmodels.compat import lzip
 from statsmodels.stats.diagnostic import het_white
 
-from functions_eval import engine1, getDates_of_MM, getDirection, getDirection, getData, getexposure
+from cfunctions import getexposure,gets,engine1
+
+# todo fix:
+#     from functions_eval import getOpenInterest, getData
+def getOpenInterest(bb_tkr):
+    oi = gets(engine1, type='agg_open_interest', data_tab='vw_data', desc_tab='cot_desc', bb_tkr=bb_tkr)
+    oi.columns = ['oi']
+    oi['OIma52'] = oi.rolling(52).mean()
+    return oi
+
+def getData(engine1,model_id, model_type_id, bb_tkr, model_types, start_date=None, end_date=None):
+    forecast = pd.read_sql_query(f"SELECT * FROM cftc.forecast WHERE model_id = {model_id}", engine1,
+                                 index_col='px_date')
+    exposure = getexposure(engine1,
+        type_of_trader=model_types.loc[model_type_id, 'cot_type'],
+        norm=model_types.loc[model_type_id, 'cot_norm'],
+        bb_tkr=bb_tkr
+    )
+
+    exposure.columns = exposure.columns.droplevel(0)
+    exposure['diff'] = exposure[exposure.columns[0]].diff()
+
+    df_sample = pd.merge(left=forecast[['qty']], right=exposure[['diff']], left_index=True, right_index=True,
+                         how='left')
+    df_sample.columns = ['forecast', 'cftc']
+
+    # print(df_sample.shape)
+    # Adjust timespan
+    if (start_date != None) & (end_date != None):
+        df_sample = df_sample[(df_sample.index >= start_date) & (df_sample.index <= end_date)]
+    elif (start_date != None) & (end_date == None):
+        df_sample = df_sample[(df_sample.index >= start_date)]
+    elif (start_date == None) & (end_date != None):
+        df_sample = df_sample[df_sample.index <= end_date]
+
+    # print(df_sample.shape)
+
+    # get OpenInterst #? adjust dates in open interest?
+    oi = getOpenInterest(bb_tkr)
+
+    # merge with df_sample
+    df_sample = pd.merge(df_sample, oi, right_index=True, left_index=True, how='left')
+    df_sample['cftc_adj'] = df_sample.cftc / df_sample.OIma52
+    df_sample['forecast_adj'] = df_sample.forecast / df_sample.OIma52
+    df_sample = df_sample.dropna()
+
+    return df_sample
+
+
+
 
 
 # For overview
@@ -61,7 +110,7 @@ def MZ1Model(model_type_id):
 
     for i in models.index:
         print(models.loc[i, 'bb_tkr'])  # print bb_tkr
-        df_sample = getData(model_id=i, model_type_id=model_type_id, bb_tkr=models.loc[i, 'bb_tkr'],
+        df_sample = getData(engine1,model_id=i, model_type_id=model_type_id, bb_tkr=models.loc[i, 'bb_tkr'],
                             model_types=model_types, start_date=None, end_date=None)
         # Might have no data for pre defined period
         if df_sample.shape[0] == 0:
@@ -126,15 +175,15 @@ def Zarnowitz2Models(model1_type_id, model2_type_id):
     return result
 
 
-# %% #* Exposure:
-res1 = Zarnowitz2Models(model1_type_id=76, model2_type_id=82)
-res2 = Zarnowitz2Models(model1_type_id=95, model2_type_id=100)
-df = res1.append(res2)
-df.to_excel('forecast_comparison_28-04-2021.xlsx')
+# %% # MZ with two Models example:
+# res1 = Zarnowitz2Models(model1_type_id=76, model2_type_id=82)
+# res2 = Zarnowitz2Models(model1_type_id=95, model2_type_id=100)
+# df = res1.append(res2)
+# df.to_excel('forecast_comparison_28-04-2021.xlsx')
 # %%
 # %%
-res_mz_82 = MZ1Model(model_type_id=82)
-res_mz_82.to_excel('mz1_82_v3.xlsx')
+res_mz_82 = MZ1Model(model_type_id=173)
+res_mz_82.to_excel('mz_173.xlsx')
 
 # %% #* Openinterest:
 
