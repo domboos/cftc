@@ -33,9 +33,9 @@ select FC.px_date, FC.qty as mom,
                              and CD3.bb_tkr = 'BLOOMBERGTICKER'
                              and CD5.bb_tkr = 'BLOOMBERGTICKER' 
                              and CD6.bb_tkr = 'BLOOMBERGTICKER' 
-        and MD.model_type_id = 147 and CD5.cot_type = 'net_commercials'
+        and MD.model_type_id = 136 and CD5.cot_type = 'net_managed_money'
                              and CD1.roll = 'active_futures'  and CD1.adjustment = 'by_ratio'
-                             and CD3.roll = 'active_futures_3'  and CD3.adjustment = 'by_ratio'
+                             and CD3.roll = 'active_futures_2'  and CD3.adjustment = 'by_ratio'
                              and CD6.roll = 'active_futures'  and CD6.adjustment = 'none'
         order by px_date
         """
@@ -43,7 +43,7 @@ select FC.px_date, FC.qty as mom,
 
 
 
-orderOFThings = pd.read_sql_query(f"Select * from cftc.order_of_things",engine1)
+orderOFThings = pd.read_sql_query(f"Select * from cftc.order_of_things order by ranking",engine1)
 tickers = orderOFThings['bb_tkr'].values
 
 

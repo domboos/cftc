@@ -264,8 +264,8 @@ def getAlpha(alpha_type, y, x=None, gma=None, start=None):
             y_tmp = y
         else:
             y_tmp = y.values
-        press1 = lambda z, z1=y_tmp, z2=x, z3=gma: press(z, z1, z2, z3)
-        gcv1 = lambda z, z1=y_tmp, z2=x, z3=gma: gcv(z, z1, z2, z3) * 100000000
+        press1 = lambda z, z1=y_tmp, z2=x, z3=gma: press(z, z1, z2, z3) * 10000000
+        # percent: 10000000000000000; number: 10000000; exposure:1
         res = op.minimize(press1, x0=start, method='BFGS', tol=0.0001, options={'disp': True,
                         'maxiter': 20, 'gtol': 0.00001, 'eps': 0.0001})
         if res.success == True:
@@ -404,6 +404,14 @@ def std_err(_x, _y, g, b):
     # sigma_sqr = np.transpose(resid) @ resid / nu
     sigma_sqr = np.sum(resid * resid) / nu
     return np.sqrt(v0 * sigma_sqr)
+
+def rsqrt(_x, _y, g, b):
+    nu = degFree(_x, g, _y.shape[0])
+    resid = _y - _x @ b
+    vaResid = np.sum(resid * resid) / nu
+    dm_y = _y - np.mean(_y)
+    varY = np.sum(dm_y * _y) / (dm_y.shape[0]-1)
+    return (varY - vaResid) / varY
 
 def tstat(_x, _y, g, b):
     return b / std_err(_x, _y, g, b)
