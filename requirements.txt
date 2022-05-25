@@ -97,7 +97,7 @@ pycosat @ file:///home/conda/feedstock_root/build_artifacts/pycosat_160227785300
 pycparser @ file:///home/conda/feedstock_root/build_artifacts/pycparser_1593275161868/work
 pycurl==7.43.0.6
 Pygments @ file:///home/conda/feedstock_root/build_artifacts/pygments_1603558917696/work
-PyJWT==1.7.1
+PyJWT==2.4.0
 pyOpenSSL @ file:///home/conda/feedstock_root/build_artifacts/pyopenssl_1606535649775/work
 pyparsing==2.4.7
 pyrsistent @ file:///home/conda/feedstock_root/build_artifacts/pyrsistent_1605115595652/work
