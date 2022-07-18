@@ -5,6 +5,7 @@ from datetime import datetime
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+plt.rcParams["font.family"] = "Times New Roman"
 import seaborn as sns
 from datetime import datetime
 
@@ -17,17 +18,21 @@ print(data_chart_2)
 
 # create two plots
 color = ['crimson', 'cyan'] # https://matplotlib.org/3.1.0/gallery/color/named_colors.html
-fig, (s1,s2) = plt.subplots(1,2, sharex=False, sharey= False ,figsize=(15,4))
+fig, (s1,s2) = plt.subplots(1,2, sharex=False, sharey= False ,figsize=(7,3))
 fig.tight_layout()
+plt.subplots_adjust(top=0.98, bottom=0.18, left=0.1, right=0.98, hspace=0.3,
+                        wspace=0.25)
 
-sns.set(font_scale = 1.5)
+sns.set(font_scale = 1)
 sns.set_style('white')
 sns.set_style('white', {'font.family':'serif', 'font.serif':'Times New Roman'})
-sns.lineplot(x = data_chart_1.index, y = data_chart_1.iloc[:, 0]*100,color ="#53777a", linewidth = 3,ax = s1 )
-sns.lineplot(x = data_chart_2.index,y =  data_chart_2.iloc[:, 0]*100,color = "#53777a",linewidth =3, ax= s2)
+sns.lineplot(x = data_chart_1.index, y=data_chart_1.iloc[:, 0]*100, color ="black", linewidth = 2,ax = s1 )
+sns.lineplot(x = data_chart_2.index, y=data_chart_2.iloc[:, 0]*100, color = "black",linewidth =2, ax= s2)
 s2.lines[0].set_linestyle("--")
-s1.set_xlabel('') ;s1.set_ylabel('')
-s2.set_xlabel('') ;s2.set_ylabel('')
+s2.set(yticks=np.array([0.0,1.0,2.0,3.0,4.0]))
+s1.set(yticks=np.array([0.0,1.0,2.0,3.0,4.0]))
+s1.set_xlabel('Lag') ;s1.set_ylabel('Weight (%)')
+s2.set_xlabel('Lag') ;s2.set_ylabel('Weight (%)')
 
 plt.savefig(f"./signals_app.png",dpi=100)
 

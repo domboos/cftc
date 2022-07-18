@@ -43,12 +43,19 @@ def getBetas2(model_id, betas_all, date):
 def createFigurePerModelwithDates(model_type, dates, savefig=False):
     betas_all, models = getSpecificData(dates=dates, model_type=model_type)
     model_ids = list(models.model_id)
-    color = ['crimson', 'cyan', 'blue', 'green', 'grey']  # https://matplotlib.org/3.1.0/gallery/color/named_colors.html
+    # color = ['#DCDCDC', '#C0C0C0', '#A9A9A9', '#808080', '#696969']
+    color = ['#D3D3D3', '#A9A9A9', '#7f7f7f', '#545454','#2A2A2A', 'black']
+    lineStyles = ['solid',
+                  (0,(1,1)),
+                  (0, (3, 1, 1, 1)),
+                  (0,(5,1)),
+                  (0, (3, 1, 1, 1, 1, 1))
+                  ] #https://matplotlib.org/stable/gallery/lines_bars_and_markers/linestyles.html
     # def Layout
-    fig, axs = plt.subplots(8, 3, figsize=(8, 10))  # sharex=False, sharey= False
+    fig, axs = plt.subplots(8, 3, figsize=(7, 11))  # sharex=False, sharey= False ,
     fig.tight_layout()
-    plt.subplots_adjust(top=0.98, bottom=0.02, left=0.05, right=0.98, hspace=0.3,
-                        wspace=0.15)
+    plt.subplots_adjust(top=0.98, bottom=0.03, left=0.08, right=0.98, hspace=0.45,
+                        wspace=0.3)
 
 
     # sns.set(font_scale=1.2)
@@ -73,9 +80,10 @@ def createFigurePerModelwithDates(model_type, dates, savefig=False):
             k = 0
             for date in dates:
                 beta = getBetas2(model_id, betas_all, [date])
-                sns.lineplot(x=beta.return_lag, y=beta.qty, ax=ax_curr, linewidth=2.5, legend=False, color=color[k])
+                sns.lineplot(x=beta.return_lag, y=beta.qty, ax=ax_curr, linewidth=2, legend=False, color=color[k],ls=lineStyles[k])
+                # ax_curr.lines[k].set_linestyle(lineStyles[k])
                 k = k + 1
-                # ax_curr.set(fontsize=10)
+
             ax_curr.set_xlabel('')
             ax_curr.set_ylabel('')
 
@@ -83,7 +91,9 @@ def createFigurePerModelwithDates(model_type, dates, savefig=False):
             title1 = \
                 pd.read_sql_query(f"SELECT name FROM cftc.order_of_things where bb_tkr = '{title}'",
                                   engine1).name.values[0]
-            ax_curr.set_title(title1,fontsize=10)
+            ax_curr.set_title(title1,fontsize=8)
+            ax_curr.tick_params(axis='both', labelsize=8)
+            ax_curr.yaxis.set_major_formatter(FormatStrFormatter('%.1e'))
             print(f"{title1}: {model_id}")
 
     fig.delaxes(axs[7, 2])
@@ -117,10 +127,10 @@ def compareBetasOf2Models(model_typeMM, model_typeNonc, labels, dates, savefig=F
 
     # *define Layout
     # https://matplotlib.org/3.1.0/gallery/color/named_colors.html
-    fig, axs = plt.subplots(8, 3, figsize=(15, 20))  # sharex=False, sharey= False ,
+    fig, axs = plt.subplots(8, 3, figsize=(7, 11))  # sharex=False, sharey= False ,
     fig.tight_layout()
-    plt.subplots_adjust(top=0.98, bottom=0.02, left=0.05, right=0.98, hspace=0.3,
-                        wspace=0.15)
+    plt.subplots_adjust(top=0.98, bottom=0.03, left=0.08, right=0.98, hspace=0.45,
+                        wspace=0.3)
     # fig.subplots_adjust(top=0.99,left=0.01)
 
     # sns.set(font_scale=1.)
@@ -141,21 +151,30 @@ def compareBetasOf2Models(model_typeMM, model_typeNonc, labels, dates, savefig=F
 
             betaNonC = getBetas2(model_id_nonc, betas_NonC, dates)
             betaMM = getBetas2(model_id_mm, betas_MM, dates)
-            sns.lineplot(x=betaMM.return_lag, y=betaMM.qty, ax=ax_curr, linewidth=3, legend=False, color='crimson')
-            sns.lineplot(x=betaNonC.return_lag, y=betaNonC.qty, ax=ax_curr, linewidth=3, legend=False, color='cyan')
+            sns.lineplot(x=betaMM.return_lag, y=betaMM.qty, ax=ax_curr, linewidth=2, legend=False, color='dimgrey')
+            sns.lineplot(x=betaNonC.return_lag, y=betaNonC.qty, ax=ax_curr, linewidth=2, legend=False, color='black',ls=(0,(1,1)))
             ax_curr.axhline(0, ls='--', color='black')
             ax_curr.ticklabel_format(axis='y',style='sci',useMathText=True)
             ax_curr.yaxis.set_major_formatter(FormatStrFormatter('%.1e'))
-            ystart, yend = ax_curr.get_ylim()
-            diff = (yend + abs(ystart))
-            ax_curr.set(yticks=np.array([0,diff*0.5,yend]))
+            ax_curr.tick_params(axis='both',labelsize=8)
 
             title = str(models_NonC[models_NonC.model_id == model_id_nonc].bb_tkr.values)[2:-2]
             title1 = \
                 pd.read_sql_query(f"SELECT name FROM cftc.order_of_things where bb_tkr = '{title}'",
                                   engine1).name.values[0]
             print(title1)
-            ax_curr.set_title(title1,fontsize=12)
+
+            if title1 == 'XXX':
+                #todo: adjust yticks:
+                ax_curr.set(yticks=np.array([0,1.5E8,3E8]))
+            else:
+
+                ystart, yend = ax_curr.get_ylim()
+                diff = (yend + abs(ystart))
+                ax_curr.set(yticks=np.array([0,diff*0.5,yend]))
+
+
+            ax_curr.set_title(title1,fontsize=8)
 
             ax_curr.set_xlabel('')
             ax_curr.set_ylabel('')
@@ -170,36 +189,22 @@ def compareBetasOf2Models(model_typeMM, model_typeNonc, labels, dates, savefig=F
     plt.show()
 
 
-def examplecreateFigurePerModelwithDates(model_type_ids:list,dates:list):
-    if not model_type_ids:
-        print('input is empty ')
-
-
-    # dates = ['2002-12-31', '2006-12-26', '2010-12-28', '2014-12-30', '2018-12-25']
-
-    pathSaveFig = "reports/figures/Betas/"
-    for model_type in model_type_ids:
-        try:
-            createFigurePerModelwithDates(model_type=model_type, dates=dates, savefig=True)
-        except:
-            continue
-
-
 if __name__ == '__main__':
 
-    # dates = ['1999-12-28',
-    #          '2004-12-28',
-    #          '2009-12-29',
-    #          '2014-12-30',
-    #          '2019-12-31']
-    # examplecreateFigurePerModelwithDates([76],dates)
+    dates = ['1999-12-28',
+             '2004-12-28',
+             '2009-12-29',
+             '2014-12-30',
+             '2019-12-31']
+    model_type_id = 139 #Speculative Pressure Index: 137 || exposure: 139
+    createFigurePerModelwithDates(model_type=model_type_id, dates=dates, savefig=True)
 
 
     # Example compareBetasOf2Models(): # #define Dates
-    dates = ['2019-12-31']
-    labels = ['','']#['Non Commercials', 'Producers']
-
-    model_typeMM = 139  # *Model2
-    model_typeNonc = 182  # *model1
-
-    compareBetasOf2Models(model_typeMM, model_typeNonc, labels, dates, savefig=True)
+    # dates = ['2019-12-31']
+    # labels = ['','']#['Non Commercials', 'Producers']
+    #
+    # model_typeMM = 139  # *Model2
+    # model_typeNonc = 182  # *model1
+    #
+    # compareBetasOf2Models(model_typeMM, model_typeNonc, labels, dates, savefig=True)
