@@ -52,7 +52,7 @@ jupyter-client @ file:///home/conda/feedstock_root/build_artifacts/jupyter_clien
 jupyter-core @ file:///home/conda/feedstock_root/build_artifacts/jupyter_core_1605735009305/work
 jupyter-telemetry @ file:///home/conda/feedstock_root/build_artifacts/jupyter_telemetry_1605173804246/work
 jupyterhub @ file:///home/conda/feedstock_root/build_artifacts/jupyterhub-feedstock_1604073658558/work
-jupyterlab==2.2.9
+jupyterlab==2.2.10
 jupyterlab-pygments @ file:///home/conda/feedstock_root/build_artifacts/jupyterlab_pygments_1601375948261/work
 jupyterlab-server @ file:///home/conda/feedstock_root/build_artifacts/jupyterlab_server_1593951277307/work
 kiwisolver @ file:///home/conda/feedstock_root/build_artifacts/kiwisolver_1604322295622/work
