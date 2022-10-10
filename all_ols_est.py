@@ -4,17 +4,15 @@ Created on Tue Aug 25 19:10:00 2020
 
 @author: grbi, dominik
 """
-
+import pickle
+import datetime
 import numpy as np
-import sqlalchemy as sq
 import statsmodels.api as sm
-from datetime import datetime
-import scipy.optimize as op
-from cfunctions import *
+from cfunctions import engine1,gets, getexposure,getRetMat,merge_pos_ret
+
 
 # crate engine
-from cengine import cftc_engine
-engine1 = cftc_engine()
+
 
 # speed up db
 from pandas.io.sql import SQLTable
@@ -64,3 +62,11 @@ y = CRR['cftc']
 model_fit = sm.OLS(y, x).fit()
 
 print(model_fit.summary())
+
+res = {'data_all':CRR,
+       'x':x,
+       'y':y,
+       'ols_model':model_fit}
+
+with open('pooled_ols_result.pickle', 'wb') as handle:
+    pickle.dump(res, handle, protocol=pickle.HIGHEST_PROTOCOL)

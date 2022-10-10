@@ -13,8 +13,7 @@ import scipy.optimize as op
 from cfunctions import *
 
 # crate engine
-from cengine import cftc_engine
-engine1 = cftc_engine()
+engine1
 
 # speed up db
 from pandas.io.sql import SQLTable

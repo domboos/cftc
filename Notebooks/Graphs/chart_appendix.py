@@ -9,7 +9,7 @@ plt.rcParams["font.family"] = "Times New Roman"
 import seaborn as sns
 from datetime import datetime
 
-file = 'C:\\Users\\grbi\\switchdrive\\Tracking Traders\\04_Abbildungen\\Chart_Trend_Signals2.xlsx'
+file = 'data/Chart_Trend_Signals2.xlsx'
 data_chart_1 = pd.read_excel(file, sheet_name='mom', index_col=0)
 print(data_chart_1)
 
